@@ -19,9 +19,30 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
 
   async function handleSave() {
     if (!empresa || !importe) return;
-    const data = { tipo, fecha, empresa, categoriaId: Number(categoriaId), carteraId: Number(carteraId), importe: parseFloat(importe), moneda, createdAt: Date.now() };
-    if (initial?.id) await db.movimientos.update(initial.id, data);
-    else await db.movimientos.add(data);
+    const nuevoImporte = parseFloat(importe);
+    const nuevaCarteraId = Number(carteraId);
+    const data = { tipo, fecha, empresa, categoriaId: Number(categoriaId), carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
+
+    if (initial?.id) {
+      // Revertir efecto del movimiento original sobre su cartera
+      const oldDelta = initial.tipo === 'ingreso' ? -initial.importe : initial.importe;
+      if (initial.carteraId) {
+        await db.carteras.where('id').equals(initial.carteraId).modify(c => { c.importe += oldDelta; });
+      }
+      // Aplicar efecto del movimiento nuevo sobre su cartera
+      const newDelta = tipo === 'ingreso' ? nuevoImporte : -nuevoImporte;
+      if (nuevaCarteraId) {
+        await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += newDelta; });
+      }
+      await db.movimientos.update(initial.id, data);
+    } else {
+      await db.movimientos.add(data);
+      const delta = tipo === 'ingreso' ? nuevoImporte : -nuevoImporte;
+      if (nuevaCarteraId) {
+        await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += delta; });
+      }
+    }
+
     onSave?.();
     onClose?.();
   }

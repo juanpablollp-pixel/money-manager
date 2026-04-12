@@ -73,7 +73,12 @@ export default function Inicio() {
 
   async function eliminar(id) {
     if (!confirm('¿Eliminar movimiento?')) return;
+    const mov = await db.movimientos.get(id);
     await db.movimientos.delete(id);
+    if (mov?.carteraId) {
+      const delta = mov.tipo === 'ingreso' ? -mov.importe : mov.importe;
+      await db.carteras.where('id').equals(mov.carteraId).modify(c => { c.importe += delta; });
+    }
     triggerRefresh();
   }
 

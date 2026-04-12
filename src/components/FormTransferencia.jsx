@@ -15,9 +15,25 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
 
   async function handleSave() {
     if (!origen || !destino || !importe) return;
-    const data = { cuentaOrigen: Number(origen), cuentaDestino: Number(destino), importe: parseFloat(importe), moneda, fecha, comentarios, createdAt: Date.now() };
-    if (initial?.id) await db.transferencias.update(initial.id, data);
-    else await db.transferencias.add(data);
+    const nuevoImporte = parseFloat(importe);
+    const nuevoOrigen = Number(origen);
+    const nuevoDestino = Number(destino);
+    const data = { cuentaOrigen: nuevoOrigen, cuentaDestino: nuevoDestino, importe: nuevoImporte, moneda, fecha, comentarios, createdAt: Date.now() };
+
+    if (initial?.id) {
+      // Revertir efecto de la transferencia original
+      await db.carteras.where('id').equals(initial.cuentaOrigen).modify(c => { c.importe += initial.importe; });
+      await db.carteras.where('id').equals(initial.cuentaDestino).modify(c => { c.importe -= initial.importe; });
+      // Aplicar efecto de la transferencia nueva
+      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= nuevoImporte; });
+      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += nuevoImporte; });
+      await db.transferencias.update(initial.id, data);
+    } else {
+      await db.transferencias.add(data);
+      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= nuevoImporte; });
+      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += nuevoImporte; });
+    }
+
     onSave?.(); onClose?.();
   }
 

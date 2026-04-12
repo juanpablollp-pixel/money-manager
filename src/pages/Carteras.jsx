@@ -30,7 +30,12 @@ export default function Carteras() {
   }
   async function eliminarTransferencia(id) {
     if (!confirm('¿Eliminar transferencia?')) return;
+    const transf = await db.transferencias.get(id);
     await db.transferencias.delete(id);
+    if (transf) {
+      await db.carteras.where('id').equals(transf.cuentaOrigen).modify(c => { c.importe += transf.importe; });
+      await db.carteras.where('id').equals(transf.cuentaDestino).modify(c => { c.importe -= transf.importe; });
+    }
     triggerRefresh();
   }
 
