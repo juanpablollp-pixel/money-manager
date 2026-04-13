@@ -112,6 +112,22 @@ html, body, #root {
   line-height: 1;
 }
 
+/* Botón home */
+.btn-home {
+  background: none;
+  border: 2px solid var(--negro);
+  border-radius: 8px;
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--negro);
+  transition: background 0.15s;
+}
+.btn-home:active { background: var(--gris-claro); }
+
 /* Botones principales */
 .btn-row {
   display: flex;
