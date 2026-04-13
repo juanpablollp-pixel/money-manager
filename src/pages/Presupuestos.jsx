@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormPresupuesto from '../components/FormPresupuesto';
+import { Pencil, X } from 'lucide-react';
 
 export default function Presupuestos() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -76,8 +77,8 @@ export default function Presupuestos() {
             <span style={{ fontWeight: 700, textAlign: 'right' }}>{fmt(p.importe)}</span>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>{getCat(p.categoriaId)}</span>
             <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: p })}>✏️</button>
-              <button className="btn-icon" onClick={() => eliminar(p.id)}>✕</button>
+              <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
+              <button className="btn-icon" onClick={() => eliminar(p.id)}><X size={15} /></button>
             </div>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>Pesos</span>
           </div>
@@ -92,8 +93,8 @@ export default function Presupuestos() {
             <span style={{ fontWeight: 700, textAlign: 'right' }}>${p.importe}</span>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>{getCat(p.categoriaId)}</span>
             <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: p })}>✏️</button>
-              <button className="btn-icon" onClick={() => eliminar(p.id)}>✕</button>
+              <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
+              <button className="btn-icon" onClick={() => eliminar(p.id)}><X size={15} /></button>
             </div>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>Dólares → {fmt(p.importe * dolarMep)}</span>
           </div>

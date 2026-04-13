@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { db, getAjuste, setAjuste } from '../db/database';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
+import { Upload, Download } from 'lucide-react';
 
 export default function Ajustes() {
   const { triggerRefresh } = useApp();
@@ -87,9 +88,18 @@ export default function Ajustes() {
       <div className="ajuste-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
         <span className="ajuste-label">Backup de Datos</span>
         <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-          <button className="btn-icon" style={{ flex: 1, width: 'auto', height: 40, background: 'var(--negro)', color: 'var(--blanco)', border: 'none', borderRadius: 8, fontSize: '1.1rem' }} onClick={exportData} title="Exportar">↑</button>
+          <button
+            className="btn-icon"
+            style={{ flex: 1, width: 'auto', height: 40, background: 'var(--negro)', color: 'var(--blanco)', border: 'none', borderRadius: 8 }}
+            onClick={exportData}
+            title="Exportar"
+          >
+            <Upload size={18} />
+          </button>
           <label style={{ flex: 1 }}>
-            <div className="btn-icon" style={{ width: '100%', height: 40, cursor: 'pointer', borderRadius: 8, fontSize: '1.1rem' }}>↓</div>
+            <div className="btn-icon" style={{ width: '100%', height: 40, cursor: 'pointer', borderRadius: 8 }}>
+              <Download size={18} />
+            </div>
             <input type="file" accept=".json" style={{ display: 'none' }} onChange={importData} />
           </label>
         </div>

@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormCartera from '../components/FormCartera';
 import FormTransferencia from '../components/FormTransferencia';
+import { Pencil, X, Eye, EyeOff } from 'lucide-react';
 
 export default function Carteras() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -71,9 +72,15 @@ export default function Carteras() {
             <span className="cartera-monto">{formatPesos(c.importe)}</span>
             <span className="cartera-tipo">{c.tipoCuenta}</span>
             <div className="cartera-actions" style={{ gridRow: 'span 2', alignSelf: 'start' }}>
-              <button className="btn-ojo" onClick={() => toggleBalance(c)}>{c.enBalance ? '👁' : '🙈'}</button>
-              <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>✏️</button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}>✕</button>
+              <button className="btn-ojo" onClick={() => toggleBalance(c)}>
+                {c.enBalance ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+              <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>
+                <Pencil size={15} />
+              </button>
+              <button className="btn-icon" onClick={() => eliminar(c.id)}>
+                <X size={15} />
+              </button>
             </div>
             <span className="cartera-moneda">{c.moneda}</span>
           </div>
@@ -84,9 +91,15 @@ export default function Carteras() {
             <span className="cartera-monto">{formatPesos(c.importe)}</span>
             <span className="cartera-tipo">{c.tipoCuenta}</span>
             <div className="cartera-actions" style={{ gridRow: 'span 2', alignSelf: 'start' }}>
-              <button className="btn-ojo" onClick={() => toggleBalance(c)}>{c.enBalance ? '👁' : '🙈'}</button>
-              <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>✏️</button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}>✕</button>
+              <button className="btn-ojo" onClick={() => toggleBalance(c)}>
+                {c.enBalance ? <Eye size={16} /> : <EyeOff size={16} />}
+              </button>
+              <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>
+                <Pencil size={15} />
+              </button>
+              <button className="btn-icon" onClick={() => eliminar(c.id)}>
+                <X size={15} />
+              </button>
             </div>
             <span className="cartera-moneda">{c.moneda}</span>
           </div>
@@ -94,7 +107,6 @@ export default function Carteras() {
         {carteras.length === 0 && <div className="empty">Sin carteras</div>}
       </div>
 
-      {/* Modal cartera / transferencia */}
       {modal && !showHistorial && (
         <Modal onClose={() => setModal(null)}>
           {modal.tipo === 'transferencia'
@@ -104,7 +116,6 @@ export default function Carteras() {
         </Modal>
       )}
 
-      {/* Historial */}
       {showHistorial && (
         <Modal onClose={() => setShowHistorial(false)}>
           <div className="modal-title">Historial de Transferencias</div>
@@ -117,7 +128,9 @@ export default function Carteras() {
                   <span className="card-importe">{formatPesos(t.importe)}</span>
                   <span className="card-fecha">{t.fecha}</span>
                   <div className="card-actions">
-                    <button className="btn-icon" onClick={() => eliminarTransferencia(t.id)}>✕</button>
+                    <button className="btn-icon" onClick={() => eliminarTransferencia(t.id)}>
+                      <X size={15} />
+                    </button>
                   </div>
                   {t.comentarios && <span className="card-cartera">{t.comentarios}</span>}
                 </div>

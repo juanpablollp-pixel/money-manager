@@ -4,6 +4,7 @@ import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormCategoria from '../components/FormCategoria';
+import { Pencil, X } from 'lucide-react';
 
 export default function Categorias() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -42,8 +43,8 @@ export default function Categorias() {
           <div key={c.id} className="categoria-card">
             <span className="categoria-nombre">{c.nombre}</span>
             <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: c })}>✏️</button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}>✕</button>
+              <button className="btn-icon" onClick={() => setModal({ item: c })}><Pencil size={15} /></button>
+              <button className="btn-icon" onClick={() => eliminar(c.id)}><X size={15} /></button>
             </div>
           </div>
         ))}
@@ -55,8 +56,8 @@ export default function Categorias() {
           <div key={c.id} className="categoria-card">
             <span className="categoria-nombre">{c.nombre}</span>
             <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: c })}>✏️</button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}>✕</button>
+              <button className="btn-icon" onClick={() => setModal({ item: c })}><Pencil size={15} /></button>
+              <button className="btn-icon" onClick={() => eliminar(c.id)}><X size={15} /></button>
             </div>
           </div>
         ))}

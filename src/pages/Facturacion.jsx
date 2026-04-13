@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormFacturacion from '../components/FormFacturacion';
+import { Pencil, X } from 'lucide-react';
 
 export default function Facturacion() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -80,8 +81,8 @@ export default function Facturacion() {
             </span>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>{f.moneda}</span>
             <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: f })}>✏️</button>
-              <button className="btn-icon" onClick={() => eliminar(f.id)}>✕</button>
+              <button className="btn-icon" onClick={() => setModal({ item: f })}><Pencil size={15} /></button>
+              <button className="btn-icon" onClick={() => eliminar(f.id)}><X size={15} /></button>
             </div>
             {f.moneda === 'Dólares' && (
               <span style={{ fontSize: '0.82rem', color: '#555' }}>→ {fmt(f.importe * dolarMep)}</span>

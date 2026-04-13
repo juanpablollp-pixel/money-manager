@@ -104,13 +104,18 @@ html, body, #root {
 /* Botón volver */
 .btn-back {
   background: none;
-  border: none;
+  border: 2px solid var(--negro);
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 1.5rem;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--negro);
-  padding: 4px 8px;
-  line-height: 1;
+  transition: background 0.15s;
 }
+.btn-back:active { background: var(--gris-claro); }
 
 /* Botón home */
 .btn-home {

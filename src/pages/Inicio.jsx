@@ -5,6 +5,7 @@ import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormMovimiento from '../components/FormMovimiento';
+import { Pencil, X, Calendar } from 'lucide-react';
 
 export default function Inicio() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -17,7 +18,6 @@ export default function Inicio() {
   const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
 
-  // Filtro de historial
   const [mostrarFiltro, setMostrarFiltro] = useState(false);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
@@ -48,7 +48,6 @@ export default function Inicio() {
     load();
   }, [refreshKey]);
 
-  // ---- Cálculos ----
   const fmt = v => formatPesos(v, separador);
 
   const presupuestoTotal = presupuestos.reduce((acc, p) => {
@@ -76,7 +75,6 @@ export default function Inicio() {
     .filter(c => c.tipo === 'ahorros')
     .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
 
-  // ---- Historial filtrado ----
   const movsFiltrados = (() => {
     if (fechaDesde || fechaHasta) {
       return movimientos.filter(m => {
@@ -159,11 +157,11 @@ export default function Inicio() {
           <div className="section-title">Historial de Movimientos</div>
           <button
             className="btn-icon"
-            style={{ width: 32, height: 32, fontSize: '1rem' }}
+            style={{ width: 32, height: 32 }}
             onClick={() => setMostrarFiltro(v => !v)}
             title="Filtrar por fecha"
           >
-            📅
+            <Calendar size={15} />
           </button>
         </div>
         <div className="section-line" />
@@ -175,13 +173,11 @@ export default function Inicio() {
             type="date"
             value={fechaDesde}
             onChange={e => setFechaDesde(e.target.value)}
-            placeholder="Desde"
           />
           <input
             type="date"
             value={fechaHasta}
             onChange={e => setFechaHasta(e.target.value)}
-            placeholder="Hasta"
           />
           <button className="btn-filtro-clear" onClick={limpiarFiltro}>Limpiar</button>
         </div>
@@ -196,8 +192,12 @@ export default function Inicio() {
               <span className="card-importe">{fmt(m.importe)}</span>
               <span className="card-fecha">{m.empresa}</span>
               <div className="card-actions">
-                <button className="btn-icon" onClick={() => setModal({ tipo: m.tipo, item: m })}>✏️</button>
-                <button className="btn-icon" onClick={() => eliminar(m.id)}>✕</button>
+                <button className="btn-icon" onClick={() => setModal({ tipo: m.tipo, item: m })}>
+                  <Pencil size={15} />
+                </button>
+                <button className="btn-icon" onClick={() => eliminar(m.id)}>
+                  <X size={15} />
+                </button>
               </div>
               <span className="card-cartera">{formatFecha(m.fecha)}</span>
               <span />
