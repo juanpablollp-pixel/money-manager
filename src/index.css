@@ -34,6 +34,10 @@ html, body, #root {
   max-width: 480px;
   margin: 0 auto;
   padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -307,6 +311,10 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   padding: 16px;
+  padding-top: calc(16px + env(safe-area-inset-top));
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
   gap: 20px;
   animation: slideIn 0.2s ease;
 }
@@ -454,6 +462,9 @@ html, body, #root {
   display: flex;
   align-items: flex-end;
   padding: 16px;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  padding-left: calc(16px + env(safe-area-inset-left));
+  padding-right: calc(16px + env(safe-area-inset-right));
 }
 .modal-content {
   background: var(--blanco);
