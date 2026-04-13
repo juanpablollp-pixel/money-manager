@@ -11,7 +11,7 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
 
   async function handleSave() {
     if (!nombre) return;
-    const data = { nombre, moneda, importe: parseFloat(importe) || 0, enBalance, tipo, tipoCuenta };
+    const data = { nombre, moneda, importe: parseFloat(String(importe).replace(',', '.')) || 0, enBalance, tipo, tipoCuenta };
     if (initial?.id) await db.carteras.update(initial.id, data);
     else await db.carteras.add(data);
     onSave?.(); onClose?.();
@@ -38,7 +38,7 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
         </div>
         <div className="form-group">
           <label className="form-label">Importe Actual</label>
-          <input type="text" className="form-input" placeholder="0" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" />
+          <input type="text" className="form-input" placeholder="0,00" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9.,]/g, ''))} inputMode="decimal" />
         </div>
         <div className="form-group">
           <label className="form-label">Tipo de Cuenta</label>

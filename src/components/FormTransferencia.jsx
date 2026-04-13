@@ -15,7 +15,7 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
 
   async function handleSave() {
     if (!origen || !destino || !importe) return;
-    const nuevoImporte = parseFloat(importe);
+    const nuevoImporte = parseFloat(String(importe).replace(',', '.'));
     const nuevoOrigen = Number(origen);
     const nuevoDestino = Number(destino);
     const data = { cuentaOrigen: nuevoOrigen, cuentaDestino: nuevoDestino, importe: nuevoImporte, moneda, fecha, comentarios, createdAt: Date.now() };
@@ -58,7 +58,7 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
         </div>
         <div className="form-group">
           <label className="form-label">Importe</label>
-          <input type="text" className="form-input" placeholder="0" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" />
+          <input type="text" className="form-input" placeholder="0,00" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9.,]/g, ''))} inputMode="decimal" />
         </div>
         <div className="form-group">
           <label className="form-label">Moneda</label>

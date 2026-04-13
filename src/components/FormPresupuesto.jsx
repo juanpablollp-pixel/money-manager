@@ -12,7 +12,7 @@ export default function FormPresupuesto({ initial = null, onSave, onClose }) {
 
   async function handleSave() {
     if (!empresa || !importe) return;
-    const data = { empresa, categoriaId: Number(categoriaId), importe: parseFloat(importe), moneda };
+    const data = { empresa, categoriaId: Number(categoriaId), importe: parseFloat(String(importe).replace(',', '.')), moneda };
     if (initial?.id) await db.presupuestos.update(initial.id, data);
     else await db.presupuestos.add(data);
     onSave?.(); onClose?.();
@@ -44,7 +44,7 @@ export default function FormPresupuesto({ initial = null, onSave, onClose }) {
         </div>
         <div className="form-group">
           <label className="form-label">Importe</label>
-          <input type="text" className="form-input" placeholder="0" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" />
+          <input type="text" className="form-input" placeholder="0,00" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9.,]/g, ''))} inputMode="decimal" />
         </div>
       </div>
       <div className="btn-row">

@@ -19,7 +19,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
 
   async function handleSave() {
     if (!empresa || !importe) return;
-    const nuevoImporte = parseFloat(importe);
+    const nuevoImporte = parseFloat(String(importe).replace(',', '.'));
     const nuevaCarteraId = Number(carteraId);
     const data = { tipo, fecha, empresa, categoriaId: Number(categoriaId), carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
 
@@ -85,7 +85,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         </div>
         <div className="form-group">
           <label className="form-label">Importe</label>
-          <input type="text" className="form-input" placeholder="0" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" />
+          <input type="text" className="form-input" placeholder="0,00" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9.,]/g, ''))} inputMode="decimal" />
         </div>
         <div className="form-group">
           <label className="form-label">Moneda</label>

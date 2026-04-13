@@ -10,12 +10,12 @@ export default function FormFacturacion({ initial = null, onSave, onClose }) {
   const anio = initial?.anio || now.getFullYear();
 
   function handleImporte(e) {
-    setImporte(e.target.value.replace(/[^0-9]/g, ''));
+    setImporte(e.target.value.replace(/[^0-9.,]/g, ''));
   }
 
   async function handleSave() {
     if (!importe) return;
-    const data = { empresa, importe: parseFloat(importe) || 0, moneda, mes, anio };
+    const data = { empresa, importe: parseFloat(String(importe).replace(',', '.')) || 0, moneda, mes, anio };
     if (initial?.id) await db.facturacion.update(initial.id, data);
     else await db.facturacion.add(data);
     onSave?.();
@@ -42,10 +42,10 @@ export default function FormFacturacion({ initial = null, onSave, onClose }) {
           <input
             type="text"
             className="form-input"
-            placeholder="0"
+            placeholder="0,00"
             value={importe}
             onChange={handleImporte}
-            inputMode="numeric"
+            inputMode="decimal"
           />
         </div>
         <div className="form-group">
