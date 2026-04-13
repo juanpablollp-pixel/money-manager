@@ -11,18 +11,21 @@ export default function Presupuestos() {
   const [presupuestos, setPresupuestos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [dolarMep, setDolarMep] = useState(1000);
+  const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
 
   useEffect(() => {
     async function load() {
-      const [press, cats, dolar] = await Promise.all([
+      const [press, cats, dolar, sep] = await Promise.all([
         db.presupuestos.toArray(),
         db.categorias.toArray(),
         getAjuste('dolarMep'),
+        getAjuste('separadorDecimal'),
       ]);
       setPresupuestos(press);
       setCategorias(cats);
       setDolarMep(parseFloat(dolar) || 1000);
+      setSeparador(sep || 'coma');
     }
     load();
   }, [refreshKey]);
@@ -34,17 +37,29 @@ export default function Presupuestos() {
   }
 
   function getCat(id) { return categorias.find(c => c.id === id)?.nombre || '—'; }
+  const fmt = v => formatPesos(v, separador);
 
   const pesos = presupuestos.filter(p => p.moneda === 'Pesos');
   const dolares = presupuestos.filter(p => p.moneda === 'Dólares');
 
+  const totalPresupuesto = presupuestos.reduce((acc, p) => {
+    return acc + (p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe);
+  }, 0);
+
   return (
     <div className="page">
-      <Header title="Presupuestos" showBack backTo="/" />
+      <Header title="Presupuestos" showBack />
 
       <button className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Nuevo Gasto al Presupuesto
       </button>
+
+      <div className="resumen">
+        <div className="resumen-row">
+          <span className="resumen-label">Total Presupuesto Mensual</span>
+          <span className="resumen-valor">{fmt(totalPresupuesto)}</span>
+        </div>
+      </div>
 
       <div className="section-header">
         <div className="section-title">Detalle de Presupuestos</div>
@@ -58,7 +73,7 @@ export default function Presupuestos() {
         {pesos.map(p => (
           <div key={p.id} className="presupuesto-card">
             <span style={{ fontWeight: 700 }}>{p.empresa}</span>
-            <span style={{ fontWeight: 700, textAlign: 'right' }}>{formatPesos(p.importe)}</span>
+            <span style={{ fontWeight: 700, textAlign: 'right' }}>{fmt(p.importe)}</span>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>{getCat(p.categoriaId)}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: p })}>✏️</button>
@@ -80,7 +95,7 @@ export default function Presupuestos() {
               <button className="btn-icon" onClick={() => setModal({ item: p })}>✏️</button>
               <button className="btn-icon" onClick={() => eliminar(p.id)}>✕</button>
             </div>
-            <span style={{ fontSize: '0.82rem', color: '#555' }}>Dólares → {formatPesos(p.importe * dolarMep)}</span>
+            <span style={{ fontSize: '0.82rem', color: '#555' }}>Dólares → {fmt(p.importe * dolarMep)}</span>
           </div>
         ))}
         {presupuestos.length === 0 && <div className="empty">Sin presupuestos</div>}

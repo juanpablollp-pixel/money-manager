@@ -232,6 +232,50 @@ html, body, #root {
 }
 .resumen-label { font-weight: 500; }
 .resumen-valor { font-weight: 700; }
+.resumen-divider {
+  height: 1px;
+  background: var(--gris-claro);
+  margin: 2px 0;
+}
+
+/* Filtro de fecha en historial */
+.filtro-fecha {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: var(--blanco);
+  border: 2px solid var(--negro);
+  border-radius: var(--card-radius);
+}
+.filtro-fecha input[type="date"] {
+  border: 2px solid var(--negro);
+  border-radius: var(--btn-radius);
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 0.88rem;
+  background: var(--bg);
+  color: var(--negro);
+  outline: none;
+  flex: 1;
+  min-width: 120px;
+}
+.filtro-fecha input[type="date"]:focus { border-color: var(--rojo); }
+.btn-filtro-clear {
+  border: 2px solid var(--gris-claro);
+  border-radius: 8px;
+  background: none;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  color: var(--gris-oscuro);
+  transition: all 0.15s;
+}
+.btn-filtro-clear:active { background: var(--gris-claro); }
 
 /* Menú overlay */
 .menu-overlay {
@@ -248,6 +292,13 @@ html, body, #root {
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
   to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOut {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+.menu-overlay.closing {
+  animation: slideOut 0.2s ease forwards;
 }
 .menu-item {
   font-family: var(--font-body);

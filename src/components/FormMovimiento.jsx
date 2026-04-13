@@ -85,7 +85,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         </div>
         <div className="form-group">
           <label className="form-label">Importe</label>
-          <input type="number" className="form-input" placeholder="0,00" value={importe} onChange={e => setImporte(e.target.value)} inputMode="decimal" />
+          <input type="text" className="form-input" placeholder="0" value={importe} onChange={e => setImporte(e.target.value.replace(/[^0-9]/g, ''))} inputMode="numeric" />
         </div>
         <div className="form-group">
           <label className="form-label">Moneda</label>

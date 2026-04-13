@@ -23,7 +23,7 @@ export default function Categorias() {
 
   return (
     <div className="page">
-      <Header title="Categorías" showBack backTo="/" />
+      <Header title="Categorías" showBack />
 
       <button className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Nueva Categoría

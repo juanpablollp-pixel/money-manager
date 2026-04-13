@@ -48,7 +48,7 @@ export default function Carteras() {
 
   return (
     <div className="page">
-      <Header title="Carteras" showBack backTo="/" />
+      <Header title="Carteras" showBack />
 
       <div className="btn-row">
         <button className="btn-main gris-claro" onClick={() => setShowHistorial(true)}>Historial de Transferencias</button>

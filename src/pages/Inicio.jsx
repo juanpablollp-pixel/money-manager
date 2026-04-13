@@ -12,17 +12,28 @@ export default function Inicio() {
   const [presupuestos, setPresupuestos] = useState([]);
   const [carteras, setCarteras] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [facturacion, setFacturacion] = useState([]);
   const [dolarMep, setDolarMep] = useState(1000);
   const [separador, setSeparador] = useState('coma');
-  const [modal, setModal] = useState(null); // null | { tipo, item }
+  const [modal, setModal] = useState(null);
+
+  // Filtro de historial
+  const [mostrarFiltro, setMostrarFiltro] = useState(false);
+  const [fechaDesde, setFechaDesde] = useState('');
+  const [fechaHasta, setFechaHasta] = useState('');
 
   useEffect(() => {
     async function load() {
-      const [movs, press, carts, cats, sep, dolar] = await Promise.all([
+      const now = new Date();
+      const mesActual = now.getMonth() + 1;
+      const anioActual = now.getFullYear();
+
+      const [movs, press, carts, cats, facts, sep, dolar] = await Promise.all([
         db.movimientos.toArray(),
         db.presupuestos.toArray(),
         db.carteras.toArray(),
         db.categorias.toArray(),
+        db.facturacion.toArray(),
         getAjuste('separadorDecimal'),
         getAjuste('dolarMep'),
       ]);
@@ -30,18 +41,18 @@ export default function Inicio() {
       setPresupuestos(press);
       setCarteras(carts);
       setCategorias(cats);
+      setFacturacion(facts.filter(f => f.mes === mesActual && f.anio === anioActual));
       setSeparador(sep || 'coma');
       setDolarMep(parseFloat(dolar) || 1000);
     }
     load();
   }, [refreshKey]);
 
-  // ---- Cálculo ----
+  // ---- Cálculos ----
   const fmt = v => formatPesos(v, separador);
 
   const presupuestoTotal = presupuestos.reduce((acc, p) => {
-    const importe = p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe;
-    return acc + importe;
+    return acc + (p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe);
   }, 0);
 
   const movsMes = movimientos.filter(m => mismoMes(m.fecha));
@@ -54,15 +65,28 @@ export default function Inicio() {
     .filter(m => m.tipo === 'ingreso')
     .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
 
-  const carterasEnBalance = carteras.filter(c => c.enBalance && c.tipo === 'gastos');
-  const totalEnCuentas = carterasEnBalance.reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
+  const totalFacturado = facturacion.reduce((acc, f) => {
+    return acc + (f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe);
+  }, 0);
 
   const totalDejarEnCuenta = presupuestoTotal - totalGastado;
-  const totalDespuesGastos = totalEnCuentas + totalIngresado - totalGastado;
+  const totalDespuesGastos = totalFacturado - presupuestoTotal;
 
   const ahorros = carteras
     .filter(c => c.tipo === 'ahorros')
-    .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0) + totalDespuesGastos;
+    .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
+
+  // ---- Historial filtrado ----
+  const movsFiltrados = (() => {
+    if (fechaDesde || fechaHasta) {
+      return movimientos.filter(m => {
+        if (fechaDesde && m.fecha < fechaDesde) return false;
+        if (fechaHasta && m.fecha > fechaHasta) return false;
+        return true;
+      });
+    }
+    return movimientos;
+  })();
 
   function getCatNombre(id) {
     return categorias.find(c => c.id === id)?.nombre || '—';
@@ -82,6 +106,12 @@ export default function Inicio() {
     triggerRefresh();
   }
 
+  function limpiarFiltro() {
+    setFechaDesde('');
+    setFechaHasta('');
+    setMostrarFiltro(false);
+  }
+
   return (
     <div className="page">
       <Header title="MoneyManager" />
@@ -92,21 +122,74 @@ export default function Inicio() {
       </div>
 
       <div className="resumen">
-        <div className="resumen-row"><span className="resumen-label">Presupuesto Mensual</span><span className="resumen-valor">{fmt(presupuestoTotal)}</span></div>
-        <div className="resumen-row"><span className="resumen-label">Total a Dejar en Cuenta</span><span className="resumen-valor">{fmt(totalDejarEnCuenta)}</span></div>
-        <div className="resumen-row"><span className="resumen-label">Total Gastado</span><span className="resumen-valor" style={{ color: 'var(--rojo)' }}>{fmt(totalGastado)}</span></div>
-        <div className="resumen-row"><span className="resumen-label">Total después de Gastos</span><span className="resumen-valor">{fmt(totalDespuesGastos)}</span></div>
-        <div className="resumen-row"><span className="resumen-label">Ahorros</span><span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(ahorros)}</span></div>
+        <div className="resumen-row">
+          <span className="resumen-label">Presupuesto Mensual</span>
+          <span className="resumen-valor">{fmt(presupuestoTotal)}</span>
+        </div>
+        <div className="resumen-row">
+          <span className="resumen-label">Facturación Mensual</span>
+          <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(totalFacturado)}</span>
+        </div>
+        <div className="resumen-row">
+          <span className="resumen-label">Ingresos del Mes</span>
+          <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(totalIngresado)}</span>
+        </div>
+        <div className="resumen-divider" />
+        <div className="resumen-row">
+          <span className="resumen-label">Total a Dejar en Cuenta</span>
+          <span className="resumen-valor">{fmt(totalDejarEnCuenta)}</span>
+        </div>
+        <div className="resumen-row">
+          <span className="resumen-label">Total Gastado</span>
+          <span className="resumen-valor" style={{ color: 'var(--rojo)' }}>{fmt(totalGastado)}</span>
+        </div>
+        <div className="resumen-row">
+          <span className="resumen-label">Total después de Gastos</span>
+          <span className="resumen-valor">{fmt(totalDespuesGastos)}</span>
+        </div>
+        <div className="resumen-divider" />
+        <div className="resumen-row">
+          <span className="resumen-label">Ahorros</span>
+          <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(ahorros)}</span>
+        </div>
       </div>
 
       <div className="section-header">
-        <div className="section-title">Historial de Movimientos</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div className="section-title">Historial de Movimientos</div>
+          <button
+            className="btn-icon"
+            style={{ width: 32, height: 32, fontSize: '1rem' }}
+            onClick={() => setMostrarFiltro(v => !v)}
+            title="Filtrar por fecha"
+          >
+            📅
+          </button>
+        </div>
         <div className="section-line" />
       </div>
 
+      {mostrarFiltro && (
+        <div className="filtro-fecha">
+          <input
+            type="date"
+            value={fechaDesde}
+            onChange={e => setFechaDesde(e.target.value)}
+            placeholder="Desde"
+          />
+          <input
+            type="date"
+            value={fechaHasta}
+            onChange={e => setFechaHasta(e.target.value)}
+            placeholder="Hasta"
+          />
+          <button className="btn-filtro-clear" onClick={limpiarFiltro}>Limpiar</button>
+        </div>
+      )}
+
       <div className="cards-list">
-        {movimientos.length === 0 && <div className="empty">Sin movimientos aún</div>}
-        {movimientos.map(m => (
+        {movsFiltrados.length === 0 && <div className="empty">Sin movimientos</div>}
+        {movsFiltrados.map(m => (
           <div key={m.id} className={`card ${m.tipo === 'gasto' ? 'rojo' : 'verde'}`}>
             <div className="card-grid">
               <span className="card-cat">{getCatNombre(m.categoriaId)}</span>

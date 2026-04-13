@@ -1,9 +1,7 @@
 import { useApp } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
 
-export default function Header({ title, showBack = false, backTo = '/' }) {
-  const { menuOpen, setMenuOpen } = useApp();
-  const navigate = useNavigate();
+export default function Header({ title, showBack = false }) {
+  const { menuOpen, setMenuOpen, closeMenu } = useApp();
 
   return (
     <div className="header">
@@ -12,11 +10,11 @@ export default function Header({ title, showBack = false, backTo = '/' }) {
         <span className="header-title">{title}</span>
       </div>
       {showBack ? (
-        <button className="btn-back" onClick={() => navigate(backTo)}>←</button>
+        <button className="btn-back" onClick={() => setMenuOpen(true)}>←</button>
       ) : (
         <button
           className={`btn-menu${menuOpen ? ' open' : ''}`}
-          onClick={() => setMenuOpen(o => !o)}
+          onClick={() => menuOpen ? closeMenu() : setMenuOpen(true)}
         >
           <span /><span /><span />
         </button>

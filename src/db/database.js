@@ -11,6 +11,10 @@ db.version(1).stores({
   ajustes: '++id, clave, valor',
 });
 
+db.version(2).stores({
+  facturacion: '++id, empresa, importe, moneda, mes, anio',
+});
+
 // Seed ajustes por defecto
 db.on('populate', async () => {
   await db.ajustes.bulkAdd([

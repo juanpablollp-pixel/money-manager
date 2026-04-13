@@ -43,14 +43,15 @@ export default function Ajustes() {
   }
 
   async function exportData() {
-    const [movs, carts, press, cats, trans] = await Promise.all([
+    const [movs, carts, press, cats, trans, facts] = await Promise.all([
       db.movimientos.toArray(),
       db.carteras.toArray(),
       db.presupuestos.toArray(),
       db.categorias.toArray(),
       db.transferencias.toArray(),
+      db.facturacion.toArray(),
     ]);
-    const data = JSON.stringify({ movimientos: movs, carteras: carts, presupuestos: press, categorias: cats, transferencias: trans }, null, 2);
+    const data = JSON.stringify({ movimientos: movs, carteras: carts, presupuestos: press, categorias: cats, transferencias: trans, facturacion: facts }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `moneymanager-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
@@ -65,13 +66,14 @@ export default function Ajustes() {
       if (!confirm('¿Restaurar backup? Se reemplazarán todos los datos actuales.')) return;
       await Promise.all([
         db.movimientos.clear(), db.carteras.clear(), db.presupuestos.clear(),
-        db.categorias.clear(), db.transferencias.clear(),
+        db.categorias.clear(), db.transferencias.clear(), db.facturacion.clear(),
       ]);
       if (data.movimientos?.length) await db.movimientos.bulkAdd(data.movimientos.map(({ id, ...r }) => r));
       if (data.carteras?.length) await db.carteras.bulkAdd(data.carteras.map(({ id, ...r }) => r));
       if (data.presupuestos?.length) await db.presupuestos.bulkAdd(data.presupuestos.map(({ id, ...r }) => r));
       if (data.categorias?.length) await db.categorias.bulkAdd(data.categorias.map(({ id, ...r }) => r));
       if (data.transferencias?.length) await db.transferencias.bulkAdd(data.transferencias.map(({ id, ...r }) => r));
+      if (data.facturacion?.length) await db.facturacion.bulkAdd(data.facturacion.map(({ id, ...r }) => r));
       triggerRefresh();
       alert('Backup restaurado correctamente.');
     } catch { alert('Archivo inválido.'); }
@@ -79,7 +81,7 @@ export default function Ajustes() {
 
   return (
     <div className="page">
-      <Header title="Ajustes" showBack backTo="/" />
+      <Header title="Ajustes" showBack />
 
       {/* Backup */}
       <div className="ajuste-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
