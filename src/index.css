@@ -10,8 +10,8 @@
   --negro: #000000;
   --blanco: #ffffff;
   --bg: #ffffff;
-  --card-radius: 12px;
-  --btn-radius: 10px;
+  --card-radius: 4px;
+  --btn-radius: 4px;
   --font-display: "new-astro", sans-serif;
   --font-body: "exo-soft", sans-serif;
 }
@@ -290,7 +290,7 @@ html, body, #root {
 .filtro-fecha input[type="date"]:focus { border-color: var(--rojo); }
 .btn-filtro-clear {
   border: 2px solid var(--gris-claro);
-  border-radius: 8px;
+  border-radius: 4px;
   background: none;
   padding: 6px 12px;
   font-family: var(--font-body);
@@ -441,7 +441,7 @@ html, body, #root {
 }
 .ajuste-select {
   border: 2px solid var(--negro);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 6px 10px;
   font-family: var(--font-body);
   font-weight: 500;
@@ -455,7 +455,7 @@ html, body, #root {
 }
 .ajuste-input {
   border: 2px solid var(--negro);
-  border-radius: 8px;
+  border-radius: 4px;
   padding: 6px 10px;
   font-family: var(--font-body);
   font-weight: 500;
