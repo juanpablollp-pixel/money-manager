@@ -78,7 +78,7 @@ export default function Carteras() {
               <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>
                 <Pencil size={15} />
               </button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}>
+              <button className="btn-icon rojo" onClick={() => eliminar(c.id)}>
                 <X size={15} />
               </button>
             </div>
@@ -97,7 +97,7 @@ export default function Carteras() {
               <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>
                 <Pencil size={15} />
               </button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}>
+              <button className="btn-icon rojo" onClick={() => eliminar(c.id)}>
                 <X size={15} />
               </button>
             </div>
@@ -128,7 +128,7 @@ export default function Carteras() {
                   <span className="card-importe">{formatPesos(t.importe)}</span>
                   <span className="card-fecha">{t.fecha}</span>
                   <div className="card-actions">
-                    <button className="btn-icon" onClick={() => eliminarTransferencia(t.id)}>
+                    <button className="btn-icon rojo" onClick={() => eliminarTransferencia(t.id)}>
                       <X size={15} />
                     </button>
                   </div>

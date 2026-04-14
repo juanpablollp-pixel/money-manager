@@ -204,7 +204,7 @@ export default function Inicio() {
                 <button className="btn-icon" onClick={() => setModal({ tipo: m.tipo, item: m })}>
                   <Pencil size={15} />
                 </button>
-                <button className="btn-icon" onClick={() => eliminar(m.id)}>
+                <button className="btn-icon rojo" onClick={() => eliminar(m.id)}>
                   <X size={15} />
                 </button>
               </div>

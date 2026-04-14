@@ -30,11 +30,10 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
         </div>
         <div className="form-group">
           <label className="form-label">Moneda / Divisa</label>
-          <div className="moneda-toggle">
-            {['Pesos', 'Dólares'].map(m => (
-              <button key={m} className={`moneda-btn${moneda === m ? ' active' : ''}`} onClick={() => setMoneda(m)}>{m}</button>
-            ))}
-          </div>
+          <select className="form-select" value={moneda} onChange={e => setMoneda(e.target.value)}>
+            <option value="Pesos">Pesos</option>
+            <option value="Dólares">Dólares</option>
+          </select>
         </div>
         <div className="form-group">
           <label className="form-label">Importe Actual</label>
@@ -51,17 +50,17 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
         </div>
         <div className="form-group">
           <label className="form-label">Se Incluye en el Balance Total</label>
-          <div className="toggle-row">
-            <button className={`toggle-btn${enBalance ? ' active-si' : ''}`} onClick={() => setEnBalance(true)}>SÍ</button>
-            <button className={`toggle-btn${!enBalance ? ' active-no' : ''}`} onClick={() => setEnBalance(false)}>NO</button>
-          </div>
+          <select className="form-select" value={enBalance ? 'si' : 'no'} onChange={e => setEnBalance(e.target.value === 'si')}>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+          </select>
         </div>
         <div className="form-group">
           <label className="form-label">Tipo de Cartera</label>
-          <div className="toggle-row">
-            <button className={`toggle-btn${tipo === 'gastos' ? ' active-no' : ''}`} onClick={() => setTipo('gastos')}>Gastos</button>
-            <button className={`toggle-btn${tipo === 'ahorros' ? ' active-si' : ''}`} onClick={() => setTipo('ahorros')}>Ahorros</button>
-          </div>
+          <select className="form-select" value={tipo} onChange={e => setTipo(e.target.value)}>
+            <option value="gastos">Gastos</option>
+            <option value="ahorros">Ahorros</option>
+          </select>
         </div>
       </div>
       <div className="btn-row">

@@ -23,10 +23,10 @@ export default function FormCategoria({ initial = null, onSave, onClose }) {
         </div>
         <div className="form-group">
           <label className="form-label">Tipo de Categoría</label>
-          <div className="toggle-row">
-            <button className={`toggle-btn${tipo === 'gastos' ? ' active-no' : ''}`} onClick={() => setTipo('gastos')}>Gastos</button>
-            <button className={`toggle-btn${tipo === 'ingresos' ? ' active-si' : ''}`} onClick={() => setTipo('ingresos')}>Ingresos</button>
-          </div>
+          <select className="form-select" value={tipo} onChange={e => setTipo(e.target.value)}>
+            <option value="gastos">Gastos</option>
+            <option value="ingresos">Ingresos</option>
+          </select>
         </div>
       </div>
       <div className="btn-row">

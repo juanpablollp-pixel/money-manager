@@ -108,8 +108,7 @@ html, body, #root {
 /* Botón volver */
 .btn-back {
   background: none;
-  border: 2px solid var(--negro);
-  border-radius: 8px;
+  border: none;
   cursor: pointer;
   width: 36px;
   height: 36px;
@@ -117,15 +116,14 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   color: var(--negro);
-  transition: background 0.15s;
+  transition: opacity 0.15s;
 }
-.btn-back:active { background: var(--gris-claro); }
+.btn-back:active { opacity: 0.5; }
 
 /* Botón home */
 .btn-home {
   background: none;
-  border: 2px solid var(--negro);
-  border-radius: 8px;
+  border: none;
   cursor: pointer;
   width: 36px;
   height: 36px;
@@ -133,9 +131,9 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   color: var(--negro);
-  transition: background 0.15s;
+  transition: opacity 0.15s;
 }
-.btn-home:active { background: var(--gris-claro); }
+.btn-home:active { opacity: 0.5; }
 
 /* Botones principales */
 .btn-row {
@@ -185,7 +183,7 @@ html, body, #root {
 
 /* Cards de movimientos */
 .card {
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--card-radius);
   padding: 12px;
   background: var(--blanco);
@@ -226,7 +224,7 @@ html, body, #root {
 }
 
 .btn-icon {
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: 8px;
   background: none;
   width: 32px;
@@ -237,8 +235,10 @@ html, body, #root {
   justify-content: center;
   font-size: 0.8rem;
   transition: background 0.15s;
+  color: var(--negro);
 }
 .btn-icon:active { background: #f0f0f0; }
+.btn-icon.rojo { border-color: var(--rojo); color: var(--rojo); }
 
 /* Dashboard de resumen */
 .resumen {
@@ -355,45 +355,53 @@ html, body, #root {
 }
 .form-label {
   font-weight: 700;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.07em;
+  color: var(--negro);
 }
 .form-input, .form-select {
-  border: 2px solid var(--negro);
-  border-radius: var(--btn-radius);
-  padding: 12px 14px;
+  border: none;
+  border-bottom: 1.5px solid var(--negro);
+  border-radius: 0;
+  padding: 8px 0;
   font-family: var(--font-body);
-  font-weight: 500;
-  font-size: 1rem;
-  background: var(--blanco);
+  font-weight: 700;
+  font-size: 1.05rem;
+  background: transparent;
   color: var(--negro);
   width: 100%;
   -webkit-appearance: none;
   appearance: none;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-bottom-color 0.15s;
 }
-.form-input:focus, .form-select:focus { border-color: var(--rojo); }
+.form-input:focus, .form-select:focus { border-bottom-color: var(--rojo); }
+.form-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='20'%3E%3Cpolyline points='2,7 6,3 10,7' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3Cpolyline points='2,13 6,17 10,13' fill='none' stroke='%23000' stroke-width='1.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 4px center;
+  padding-right: 24px;
+}
 
 .form-card {
-  background: var(--blanco);
-  border: 2px solid var(--negro);
-  border-radius: var(--card-radius);
-  padding: 16px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 20px;
 }
 
 .form-section-title {
-  font-weight: 700;
-  font-size: 0.8rem;
+  font-weight: 500;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--gris-oscuro);
+  letter-spacing: 0.09em;
+  color: var(--gris-claro);
   border-bottom: 1px solid var(--gris-claro);
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
 
 /* Toggle SI/NO */
@@ -494,7 +502,7 @@ html, body, #root {
 
 /* Cartera card */
 .cartera-card {
-  border: 2px solid var(--rojo);
+  border: 1.5px solid var(--rojo);
   border-radius: var(--card-radius);
   padding: 12px;
   background: var(--blanco);
@@ -511,7 +519,7 @@ html, body, #root {
 
 /* Categoría card */
 .categoria-card {
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--card-radius);
   padding: 12px 14px;
   background: var(--blanco);
@@ -523,7 +531,7 @@ html, body, #root {
 
 /* Presupuesto card */
 .presupuesto-card {
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--card-radius);
   padding: 12px;
   background: var(--blanco);

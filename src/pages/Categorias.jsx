@@ -44,7 +44,7 @@ export default function Categorias() {
             <span className="categoria-nombre">{c.nombre}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: c })}><Pencil size={15} /></button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}><X size={15} /></button>
+              <button className="btn-icon rojo" onClick={() => eliminar(c.id)}><X size={15} /></button>
             </div>
           </div>
         ))}
@@ -57,7 +57,7 @@ export default function Categorias() {
             <span className="categoria-nombre">{c.nombre}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: c })}><Pencil size={15} /></button>
-              <button className="btn-icon" onClick={() => eliminar(c.id)}><X size={15} /></button>
+              <button className="btn-icon rojo" onClick={() => eliminar(c.id)}><X size={15} /></button>
             </div>
           </div>
         ))}

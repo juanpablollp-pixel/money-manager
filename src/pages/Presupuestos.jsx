@@ -78,7 +78,7 @@ export default function Presupuestos() {
             <span style={{ fontSize: '0.82rem', color: '#555' }}>{getCat(p.categoriaId)}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
-              <button className="btn-icon" onClick={() => eliminar(p.id)}><X size={15} /></button>
+              <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
             </div>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>Pesos</span>
           </div>
@@ -94,7 +94,7 @@ export default function Presupuestos() {
             <span style={{ fontSize: '0.82rem', color: '#555' }}>{getCat(p.categoriaId)}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
-              <button className="btn-icon" onClick={() => eliminar(p.id)}><X size={15} /></button>
+              <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
             </div>
             <span style={{ fontSize: '0.82rem', color: '#555' }}>Dólares → {fmt(p.importe * dolarMep)}</span>
           </div>

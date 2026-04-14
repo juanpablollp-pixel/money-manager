@@ -89,11 +89,10 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         </div>
         <div className="form-group">
           <label className="form-label">Moneda</label>
-          <div className="moneda-toggle">
-            {['Pesos', 'Dólares'].map(m => (
-              <button key={m} className={`moneda-btn${moneda === m ? ' active' : ''}`} onClick={() => setMoneda(m)}>{m}</button>
-            ))}
-          </div>
+          <select className="form-select" value={moneda} onChange={e => setMoneda(e.target.value)}>
+            <option value="Pesos">Pesos</option>
+            <option value="Dólares">Dólares</option>
+          </select>
         </div>
       </div>
       <div className="btn-row">
