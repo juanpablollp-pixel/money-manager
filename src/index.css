@@ -248,7 +248,7 @@ html, body, #root {
   padding: 12px;
   background: var(--blanco);
   border-radius: var(--card-radius);
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
 }
 .resumen-row {
   display: flex;
@@ -271,11 +271,11 @@ html, body, #root {
   flex-wrap: wrap;
   padding: 8px 12px;
   background: var(--blanco);
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--card-radius);
 }
 .filtro-fecha input[type="date"] {
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--btn-radius);
   padding: 6px 10px;
   font-family: var(--font-body);
@@ -289,7 +289,7 @@ html, body, #root {
 }
 .filtro-fecha input[type="date"]:focus { border-color: var(--rojo); }
 .btn-filtro-clear {
-  border: 2px solid var(--gris-claro);
+  border: 1.5px solid var(--gris-claro);
   border-radius: 4px;
   background: none;
   padding: 6px 12px;
@@ -412,7 +412,7 @@ html, body, #root {
 .toggle-btn {
   flex: 1;
   padding: 10px;
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--btn-radius);
   font-family: var(--font-body);
   font-weight: 700;
@@ -427,7 +427,7 @@ html, body, #root {
 /* Ajustes cards */
 .ajuste-card {
   background: var(--blanco);
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--card-radius);
   padding: 14px 16px;
   display: flex;
@@ -440,7 +440,7 @@ html, body, #root {
   font-size: 0.95rem;
 }
 .ajuste-select {
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: 4px;
   padding: 6px 10px;
   font-family: var(--font-body);
@@ -454,7 +454,7 @@ html, body, #root {
   text-align: center;
 }
 .ajuste-input {
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: 4px;
   padding: 6px 10px;
   font-family: var(--font-body);
@@ -564,7 +564,7 @@ html, body, #root {
 .moneda-btn {
   flex: 1;
   padding: 10px;
-  border: 2px solid var(--negro);
+  border: 1.5px solid var(--negro);
   border-radius: var(--btn-radius);
   font-family: var(--font-body);
   font-weight: 700;
