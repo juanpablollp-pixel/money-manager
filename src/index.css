@@ -1,4 +1,5 @@
 @import url("https://use.typekit.net/nhm3ika.css");
+@import url("https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap");
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -13,7 +14,7 @@
   --card-radius: 4px;
   --btn-radius: 4px;
   --font-display: "new-astro", sans-serif;
-  --font-body: "exo-soft", sans-serif;
+  --font-body: "Exo 2", sans-serif;
 }
 
 html, body, #root {
