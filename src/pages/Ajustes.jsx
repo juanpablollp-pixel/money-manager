@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { db, getAjuste, setAjuste } from '../db/database';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
-import { Upload, Download } from 'lucide-react';
+import { Upload, Download, RefreshCw } from 'lucide-react';
 
 export default function Ajustes() {
   const { triggerRefresh } = useApp();
   const [carteras, setCarteras] = useState([]);
+  const [loadingDolar, setLoadingDolar] = useState(false);
   const [vals, setVals] = useState({
     dolarMep: '',
     periodoDefault: 'mensual',
@@ -41,6 +42,20 @@ export default function Ajustes() {
     setVals(v => ({ ...v, [clave]: valor }));
     await setAjuste(clave, valor);
     triggerRefresh();
+  }
+
+  async function fetchDolarMep() {
+    setLoadingDolar(true);
+    try {
+      const res = await fetch('https://dolarapi.com/v1/dolares/bolsa');
+      const data = await res.json();
+      const valor = ((data.compra + data.venta) / 2).toFixed(2);
+      await update('dolarMep', valor);
+    } catch {
+      alert('No se pudo obtener la cotización. Intentá más tarde.');
+    } finally {
+      setLoadingDolar(false);
+    }
   }
 
   async function exportData() {
@@ -127,14 +142,25 @@ export default function Ajustes() {
       {/* Dólar MEP */}
       <div className="ajuste-card">
         <span className="ajuste-label">Cotización Dólar MEP</span>
-        <input
-          type="number"
-          className="ajuste-input"
-          value={vals.dolarMep}
-          onChange={e => update('dolarMep', e.target.value)}
-          inputMode="decimal"
-          placeholder="0,00"
-        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <input
+            type="number"
+            className="ajuste-input"
+            value={vals.dolarMep}
+            onChange={e => update('dolarMep', e.target.value)}
+            inputMode="decimal"
+            placeholder="0,00"
+          />
+          <button
+            className="btn-icon"
+            onClick={fetchDolarMep}
+            disabled={loadingDolar}
+            title="Actualizar cotización"
+            style={{ flexShrink: 0 }}
+          >
+            <RefreshCw size={16} style={{ animation: loadingDolar ? 'spin 1s linear infinite' : 'none' }} />
+          </button>
+        </div>
       </div>
 
       {/* Primer día */}
