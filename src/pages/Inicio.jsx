@@ -68,12 +68,12 @@ export default function Inicio() {
     return acc + (f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe);
   }, 0);
 
-  const totalDejarEnCuenta = presupuestoTotal - totalGastado;
-  const totalDespuesGastos = totalIngresado - presupuestoTotal;
-
   const balanceCuenta = carteras
     .filter(c => c.enBalance)
     .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
+
+  const totalDejarEnCuenta = presupuestoTotal - totalGastado;
+  const totalDespuesGastos = balanceCuenta - totalDejarEnCuenta;
 
   const ahorros = carteras
     .filter(c => c.tipo === 'ahorros')
