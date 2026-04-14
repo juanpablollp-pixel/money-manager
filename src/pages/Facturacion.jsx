@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormFacturacion from '../components/FormFacturacion';
 import { Pencil, X } from 'lucide-react';
+import FitButton from '../components/FitButton';
 
 export default function Facturacion() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -50,9 +51,9 @@ export default function Facturacion() {
     <div className="page">
       <Header title="Facturación" showBack />
 
-      <button className="btn-main negro full" onClick={() => setModal({})}>
+      <FitButton className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Facturación
-      </button>
+      </FitButton>
 
       <div className="resumen">
         <div className="resumen-row">

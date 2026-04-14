@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormMovimiento from '../components/FormMovimiento';
 import { Pencil, X, Calendar } from 'lucide-react';
+import FitButton from '../components/FitButton';
 
 export default function Inicio() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -119,8 +120,8 @@ export default function Inicio() {
       <Header title="MoneyManager" />
 
       <div className="btn-row">
-        <button className="btn-main rojo" onClick={() => setModal({ tipo: 'gasto' })}>Nuevo Gasto</button>
-        <button className="btn-main verde" onClick={() => setModal({ tipo: 'ingreso' })}>Nuevo Ingreso</button>
+        <FitButton className="btn-main rojo" onClick={() => setModal({ tipo: 'gasto' })}>Nuevo Gasto</FitButton>
+        <FitButton className="btn-main verde" onClick={() => setModal({ tipo: 'ingreso' })}>Nuevo Ingreso</FitButton>
       </div>
 
       <div className="resumen">

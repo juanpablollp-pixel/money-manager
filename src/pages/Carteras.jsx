@@ -7,6 +7,7 @@ import Modal from '../components/Modal';
 import FormCartera from '../components/FormCartera';
 import FormTransferencia from '../components/FormTransferencia';
 import { Pencil, X, Eye, EyeOff } from 'lucide-react';
+import FitButton from '../components/FitButton';
 
 export default function Carteras() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -52,12 +53,12 @@ export default function Carteras() {
       <Header title="Carteras" showBack />
 
       <div className="btn-row">
-        <button className="btn-main gris-claro" onClick={() => setShowHistorial(true)}>Historial de Transferencias</button>
-        <button className="btn-main gris-oscuro" onClick={() => setModal({ tipo: 'transferencia' })}>Nueva Transferencia</button>
+        <FitButton className="btn-main gris-claro" onClick={() => setShowHistorial(true)}>Historial de Transferencias</FitButton>
+        <FitButton className="btn-main gris-oscuro" onClick={() => setModal({ tipo: 'transferencia' })}>Nueva Transferencia</FitButton>
       </div>
       <div className="btn-row">
-        <button className="btn-main rojo" onClick={() => setModal({ tipo: 'cartera', tipoCartera: 'gastos' })}>Nueva Cartera de Gastos</button>
-        <button className="btn-main verde" onClick={() => setModal({ tipo: 'cartera', tipoCartera: 'ahorros' })}>Nueva Cartera de Ahorros</button>
+        <FitButton className="btn-main rojo" onClick={() => setModal({ tipo: 'cartera', tipoCartera: 'gastos' })}>Nueva Cartera de Gastos</FitButton>
+        <FitButton className="btn-main verde" onClick={() => setModal({ tipo: 'cartera', tipoCartera: 'ahorros' })}>Nueva Cartera de Ahorros</FitButton>
       </div>
 
       <div className="section-header">
@@ -137,7 +138,7 @@ export default function Carteras() {
               </div>
             ))}
           </div>
-          <button className="btn-main negro full" onClick={() => { setShowHistorial(false); setModal({ tipo: 'transferencia' }); }}>Nueva Transferencia</button>
+          <FitButton className="btn-main negro full" onClick={() => { setShowHistorial(false); setModal({ tipo: 'transferencia' }); }}>Nueva Transferencia</FitButton>
         </Modal>
       )}
     </div>

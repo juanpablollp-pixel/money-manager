@@ -6,6 +6,7 @@ import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormPresupuesto from '../components/FormPresupuesto';
 import { Pencil, X } from 'lucide-react';
+import FitButton from '../components/FitButton';
 
 export default function Presupuestos() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -51,9 +52,9 @@ export default function Presupuestos() {
     <div className="page">
       <Header title="Presupuestos" showBack />
 
-      <button className="btn-main negro full" onClick={() => setModal({})}>
+      <FitButton className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Nuevo Gasto al Presupuesto
-      </button>
+      </FitButton>
 
       <div className="resumen">
         <div className="resumen-row">

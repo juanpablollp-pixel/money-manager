@@ -5,6 +5,7 @@ import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormCategoria from '../components/FormCategoria';
 import { Pencil, X } from 'lucide-react';
+import FitButton from '../components/FitButton';
 
 export default function Categorias() {
   const { refreshKey, triggerRefresh } = useApp();
@@ -26,9 +27,9 @@ export default function Categorias() {
     <div className="page">
       <Header title="Categorías" showBack />
 
-      <button className="btn-main negro full" onClick={() => setModal({})}>
+      <FitButton className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Nueva Categoría
-      </button>
+      </FitButton>
 
       <div className="section-header">
         <div className="section-title">Detalle de Categorías</div>
