@@ -80,13 +80,13 @@ export default function Facturacion() {
             <span style={{ fontWeight: 700, textAlign: 'right' }}>
               {f.moneda === 'Dólares' ? `$${f.importe}` : fmt(f.importe)}
             </span>
-            <span style={{ fontSize: '0.82rem', color: '#555' }}>{f.moneda}</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>{f.moneda}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: f })}><Pencil size={15} /></button>
-              <button className="btn-icon" onClick={() => eliminar(f.id)}><X size={15} /></button>
+              <button className="btn-icon rojo" onClick={() => eliminar(f.id)}><X size={15} /></button>
             </div>
             {f.moneda === 'Dólares' && (
-              <span style={{ fontSize: '0.82rem', color: '#555' }}>→ {fmt(f.importe * dolarMep)}</span>
+              <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>→ {fmt(f.importe * dolarMep)}</span>
             )}
           </div>
         ))}

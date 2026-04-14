@@ -5,7 +5,7 @@ import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormMovimiento from '../components/FormMovimiento';
-import { Pencil, X, Calendar } from 'lucide-react';
+import { Pencil, X, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 import FitButton from '../components/FitButton';
 
 export default function Inicio() {
@@ -139,7 +139,7 @@ export default function Inicio() {
         </div>
         <div className="resumen-row">
           <span className="resumen-label">Total Después de Gastos</span>
-          <span className="resumen-valor">{fmt(totalDespuesGastos)}</span>
+          <span className="resumen-valor" style={{ color: totalDespuesGastos < 0 ? 'var(--rojo)' : 'var(--negro)' }}>{fmt(totalDespuesGastos)}</span>
         </div>
         <div className="resumen-divider" />
         <div className="resumen-row">
@@ -196,22 +196,30 @@ export default function Inicio() {
       <div className="cards-list">
         {movsFiltrados.length === 0 && <div className="empty">Sin movimientos</div>}
         {movsFiltrados.map(m => (
-          <div key={m.id} className={`card ${m.tipo === 'gasto' ? 'rojo' : 'verde'}`}>
-            <div className="card-grid">
-              <span className="card-cat">{getCatNombre(m.categoriaId)}</span>
-              <span className="card-importe">{fmt(m.importe)}</span>
-              <span className="card-fecha">{m.empresa}</span>
+          <div key={m.id} className="card">
+            <div className={`card-icon ${m.tipo === 'gasto' ? 'rojo' : 'verde'}`}>
+              {m.tipo === 'gasto'
+                ? <TrendingDown size={20} />
+                : <TrendingUp size={20} />
+              }
+            </div>
+            <div className="card-body">
+              <div className="card-title">{getCatNombre(m.categoriaId)}</div>
+              <div className="card-subtitle">{m.empresa} · {getCarteraNombre(m.carteraId)}</div>
+              <div className="card-date">{formatFecha(m.fecha)}</div>
+            </div>
+            <div className="card-right">
+              <span className={`card-importe ${m.tipo === 'gasto' ? 'rojo' : 'verde'}`}>
+                {m.tipo === 'gasto' ? '-' : '+'}{fmt(m.importe)}
+              </span>
               <div className="card-actions">
                 <button className="btn-icon" onClick={() => setModal({ tipo: m.tipo, item: m })}>
-                  <Pencil size={15} />
+                  <Pencil size={14} />
                 </button>
                 <button className="btn-icon rojo" onClick={() => eliminar(m.id)}>
-                  <X size={15} />
+                  <X size={14} />
                 </button>
               </div>
-              <span className="card-cartera">{formatFecha(m.fecha)}</span>
-              <span />
-              <span className="card-cartera">{getCarteraNombre(m.carteraId)} | {m.moneda}</span>
             </div>
           </div>
         ))}

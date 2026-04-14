@@ -76,12 +76,12 @@ export default function Presupuestos() {
           <div key={p.id} className="presupuesto-card">
             <span style={{ fontWeight: 700 }}>{p.empresa}</span>
             <span style={{ fontWeight: 700, textAlign: 'right' }}>{fmt(p.importe)}</span>
-            <span style={{ fontSize: '0.82rem', color: '#555' }}>{getCat(p.categoriaId)}</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>{getCat(p.categoriaId)}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
               <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
             </div>
-            <span style={{ fontSize: '0.82rem', color: '#555' }}>Pesos</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>Pesos</span>
           </div>
         ))}
 
@@ -92,12 +92,12 @@ export default function Presupuestos() {
           <div key={p.id} className="presupuesto-card">
             <span style={{ fontWeight: 700 }}>{p.empresa}</span>
             <span style={{ fontWeight: 700, textAlign: 'right' }}>${p.importe}</span>
-            <span style={{ fontSize: '0.82rem', color: '#555' }}>{getCat(p.categoriaId)}</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>{getCat(p.categoriaId)}</span>
             <div className="card-actions">
               <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
               <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
             </div>
-            <span style={{ fontSize: '0.82rem', color: '#555' }}>Dólares → {fmt(p.importe * dolarMep)}</span>
+            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>Dólares → {fmt(p.importe * dolarMep)}</span>
           </div>
         ))}
         {presupuestos.length === 0 && <div className="empty">Sin presupuestos</div>}

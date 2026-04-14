@@ -18,7 +18,7 @@ export default function Header({ title, showBack = false }) {
             <button className="btn-home" onClick={() => navigate('/')} title="Inicio">
               <Home size={18} />
             </button>
-            <button className="btn-back" onClick={() => setMenuOpen(true)}>
+            <button className="btn-back" onClick={() => navigate(-1)}>
               <ArrowLeft size={22} />
             </button>
           </>
