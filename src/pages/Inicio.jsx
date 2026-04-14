@@ -69,7 +69,11 @@ export default function Inicio() {
   }, 0);
 
   const totalDejarEnCuenta = presupuestoTotal - totalGastado;
-  const totalDespuesGastos = totalFacturado - presupuestoTotal;
+  const totalDespuesGastos = totalIngresado - presupuestoTotal;
+
+  const balanceCuenta = carteras
+    .filter(c => c.enBalance)
+    .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
 
   const ahorros = carteras
     .filter(c => c.tipo === 'ahorros')
@@ -121,29 +125,34 @@ export default function Inicio() {
 
       <div className="resumen">
         <div className="resumen-row">
-          <span className="resumen-label">Presupuesto Mensual</span>
-          <span className="resumen-valor">{fmt(presupuestoTotal)}</span>
-        </div>
-        <div className="resumen-row">
           <span className="resumen-label">Facturación Mensual</span>
           <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(totalFacturado)}</span>
         </div>
         <div className="resumen-row">
-          <span className="resumen-label">Ingresos del Mes</span>
-          <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(totalIngresado)}</span>
+          <span className="resumen-label">Presupuesto Mensual</span>
+          <span className="resumen-valor">{fmt(presupuestoTotal)}</span>
         </div>
-        <div className="resumen-divider" />
         <div className="resumen-row">
           <span className="resumen-label">Total a Dejar en Cuenta</span>
           <span className="resumen-valor">{fmt(totalDejarEnCuenta)}</span>
         </div>
         <div className="resumen-row">
-          <span className="resumen-label">Total Gastado</span>
-          <span className="resumen-valor" style={{ color: 'var(--rojo)' }}>{fmt(totalGastado)}</span>
+          <span className="resumen-label">Total Después de Gastos</span>
+          <span className="resumen-valor">{fmt(totalDespuesGastos)}</span>
+        </div>
+        <div className="resumen-divider" />
+        <div className="resumen-row">
+          <span className="resumen-label">Ingresos</span>
+          <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(totalIngresado)}</span>
         </div>
         <div className="resumen-row">
-          <span className="resumen-label">Total después de Gastos</span>
-          <span className="resumen-valor">{fmt(totalDespuesGastos)}</span>
+          <span className="resumen-label">Gastos</span>
+          <span className="resumen-valor" style={{ color: 'var(--rojo)' }}>{fmt(totalGastado)}</span>
+        </div>
+        <div className="resumen-divider" />
+        <div className="resumen-row">
+          <span className="resumen-label">Balance de Cuenta</span>
+          <span className="resumen-valor">{fmt(balanceCuenta)}</span>
         </div>
         <div className="resumen-divider" />
         <div className="resumen-row">
