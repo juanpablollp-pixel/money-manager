@@ -176,7 +176,7 @@ html, body, #root {
   text-align: right;
 }
 .section-line {
-  height: 2px;
+  height: 1.5px;
   background: var(--negro);
   border-radius: 1px;
 }
