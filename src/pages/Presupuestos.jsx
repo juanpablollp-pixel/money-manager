@@ -74,14 +74,18 @@ export default function Presupuestos() {
         )}
         {pesos.map(p => (
           <div key={p.id} className="presupuesto-card">
-            <span style={{ fontWeight: 700 }}>{p.empresa}</span>
-            <span style={{ fontWeight: 700, textAlign: 'right' }}>{fmt(p.importe)}</span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>{getCat(p.categoriaId)}</span>
-            <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
-              <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
+            <div className="presupuesto-body">
+              <span className="card-title">{p.empresa}</span>
+              <span className="card-subtitle">{getCat(p.categoriaId)}</span>
+              <span className="card-date">Pesos</span>
             </div>
-            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>Pesos</span>
+            <div className="card-right">
+              <span className="card-importe">{fmt(p.importe)}</span>
+              <div className="card-actions">
+                <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
+                <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
+              </div>
+            </div>
           </div>
         ))}
 
@@ -90,14 +94,18 @@ export default function Presupuestos() {
         )}
         {dolares.map(p => (
           <div key={p.id} className="presupuesto-card">
-            <span style={{ fontWeight: 700 }}>{p.empresa}</span>
-            <span style={{ fontWeight: 700, textAlign: 'right' }}>${p.importe}</span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>{getCat(p.categoriaId)}</span>
-            <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
-              <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
+            <div className="presupuesto-body">
+              <span className="card-title">{p.empresa}</span>
+              <span className="card-subtitle">{getCat(p.categoriaId)}</span>
+              <span className="card-date">Dólares → {fmt(p.importe * dolarMep)}</span>
             </div>
-            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>Dólares → {fmt(p.importe * dolarMep)}</span>
+            <div className="card-right">
+              <span className="card-importe">${p.importe}</span>
+              <div className="card-actions">
+                <button className="btn-icon" onClick={() => setModal({ item: p })}><Pencil size={15} /></button>
+                <button className="btn-icon rojo" onClick={() => eliminar(p.id)}><X size={15} /></button>
+              </div>
+            </div>
           </div>
         ))}
         {presupuestos.length === 0 && <div className="empty">Sin presupuestos</div>}

@@ -740,9 +740,16 @@ html, body, #root {
   padding: 14px;
   background: var(--card-bg);
   box-shadow: var(--card-shadow);
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 4px 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.presupuesto-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
 }
 
 /* Empty state */

@@ -76,18 +76,21 @@ export default function Facturacion() {
         {facturacion.length === 0 && <div className="empty">Sin registros de facturación</div>}
         {facturacion.map(f => (
           <div key={f.id} className="presupuesto-card">
-            <span style={{ fontWeight: 700 }}>{f.empresa || '—'}</span>
-            <span style={{ fontWeight: 700, textAlign: 'right' }}>
-              {f.moneda === 'Dólares' ? `$${f.importe}` : fmt(f.importe)}
-            </span>
-            <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>{f.moneda}</span>
-            <div className="card-actions">
-              <button className="btn-icon" onClick={() => setModal({ item: f })}><Pencil size={15} /></button>
-              <button className="btn-icon rojo" onClick={() => eliminar(f.id)}><X size={15} /></button>
+            <div className="presupuesto-body">
+              <span className="card-title">{f.empresa || '—'}</span>
+              <span className="card-date">
+                {f.moneda === 'Dólares' ? `Dólares → ${fmt(f.importe * dolarMep)}` : 'Pesos'}
+              </span>
             </div>
-            {f.moneda === 'Dólares' && (
-              <span style={{ fontSize: '0.82rem', color: 'var(--gris-oscuro)' }}>→ {fmt(f.importe * dolarMep)}</span>
-            )}
+            <div className="card-right">
+              <span className="card-importe">
+                {f.moneda === 'Dólares' ? `$${f.importe}` : fmt(f.importe)}
+              </span>
+              <div className="card-actions">
+                <button className="btn-icon" onClick={() => setModal({ item: f })}><Pencil size={15} /></button>
+                <button className="btn-icon rojo" onClick={() => eliminar(f.id)}><X size={15} /></button>
+              </div>
+            </div>
           </div>
         ))}
       </div>
