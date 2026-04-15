@@ -57,6 +57,7 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  overflow-x: hidden;
 }
 
 /* Header */
@@ -160,10 +161,13 @@ html, body, #root {
 .btn-row {
   display: flex;
   gap: 10px;
+  width: 100%;
+  overflow: hidden;
 }
 
 .btn-main {
   flex: 1;
+  min-width: 0;
   padding: 13px 12px;
   border: none;
   border-radius: var(--btn-radius);
@@ -180,6 +184,7 @@ html, body, #root {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  overflow: hidden;
 }
 .btn-main:active { transform: scale(0.97); opacity: 0.9; }
 .btn-main.rojo { background: var(--rojo); box-shadow: 0 4px 12px rgba(244,63,94,0.3); }
