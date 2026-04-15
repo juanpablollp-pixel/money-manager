@@ -187,8 +187,8 @@ html, body, #root {
   overflow: hidden;
 }
 .btn-main:active { transform: scale(0.97); opacity: 0.9; }
-.btn-main.rojo { background: var(--rojo); box-shadow: 0 4px 12px rgba(244,63,94,0.3); }
-.btn-main.verde { background: var(--verde); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+.btn-main.rojo { background: var(--rojo); }
+.btn-main.verde { background: var(--verde); }
 .btn-main.gris-claro { background: var(--slate-200); color: var(--negro); box-shadow: none; }
 .btn-main.gris-oscuro { background: var(--slate-700); color: var(--blanco); }
 .btn-main.negro { background: var(--negro); }
