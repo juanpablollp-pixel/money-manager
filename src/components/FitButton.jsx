@@ -6,7 +6,7 @@ export default function FitButton({ children, className, style, onClick, disable
 
   useEffect(() => {
     if (!textRef.current) return;
-    const fit = fitty(textRef.current, { minSize: 9, maxSize: 13, multiLine: false });
+    const fit = fitty(textRef.current, { minSize: 8, maxSize: 11, multiLine: false });
     return () => fit.unsubscribe();
   }, [children]);
 

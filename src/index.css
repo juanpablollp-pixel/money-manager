@@ -168,7 +168,7 @@ html, body, #root {
 .btn-main {
   flex: 1;
   min-width: 0;
-  padding: 13px 12px;
+  padding: 11px 10px;
   border: none;
   border-radius: var(--btn-radius);
   font-family: var(--font-body);
