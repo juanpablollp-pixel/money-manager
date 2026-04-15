@@ -53,7 +53,7 @@ export default function Carteras() {
       <Header title="Carteras" showBack />
 
       <div className="btn-row">
-        <FitButton className="btn-main gris-claro" onClick={() => setShowHistorial(true)}>Historial de Transferencias</FitButton>
+        <FitButton className="btn-main gris-claro" onClick={() => setShowHistorial(true)}>Historial de Transf.</FitButton>
         <FitButton className="btn-main gris-oscuro" onClick={() => setModal({ tipo: 'transferencia' })}>Nueva Transferencia</FitButton>
       </div>
       <div className="btn-row">
