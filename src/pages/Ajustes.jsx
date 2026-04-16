@@ -84,12 +84,12 @@ export default function Ajustes() {
         db.movimientos.clear(), db.carteras.clear(), db.presupuestos.clear(),
         db.categorias.clear(), db.transferencias.clear(), db.facturacion.clear(),
       ]);
-      if (data.movimientos?.length) await db.movimientos.bulkAdd(data.movimientos.map(({ id, ...r }) => r));
-      if (data.carteras?.length) await db.carteras.bulkAdd(data.carteras.map(({ id, ...r }) => r));
-      if (data.presupuestos?.length) await db.presupuestos.bulkAdd(data.presupuestos.map(({ id, ...r }) => r));
-      if (data.categorias?.length) await db.categorias.bulkAdd(data.categorias.map(({ id, ...r }) => r));
-      if (data.transferencias?.length) await db.transferencias.bulkAdd(data.transferencias.map(({ id, ...r }) => r));
-      if (data.facturacion?.length) await db.facturacion.bulkAdd(data.facturacion.map(({ id, ...r }) => r));
+      if (data.movimientos?.length) await db.movimientos.bulkAdd(data.movimientos);
+      if (data.carteras?.length) await db.carteras.bulkAdd(data.carteras);
+      if (data.presupuestos?.length) await db.presupuestos.bulkAdd(data.presupuestos);
+      if (data.categorias?.length) await db.categorias.bulkAdd(data.categorias);
+      if (data.transferencias?.length) await db.transferencias.bulkAdd(data.transferencias);
+      if (data.facturacion?.length) await db.facturacion.bulkAdd(data.facturacion);
       triggerRefresh();
       alert('Backup restaurado correctamente.');
     } catch { alert('Archivo inválido.'); }
