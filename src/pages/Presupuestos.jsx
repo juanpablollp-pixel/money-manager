@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
-import { formatPesos } from '../utils/format';
+import { formatPesos, mismoMes } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
@@ -12,20 +12,23 @@ export default function Presupuestos() {
   const { refreshKey, triggerRefresh } = useApp();
   const [presupuestos, setPresupuestos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [movimientos, setMovimientos] = useState([]);
   const [dolarMep, setDolarMep] = useState(1000);
   const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
 
   useEffect(() => {
     async function load() {
-      const [press, cats, dolar, sep] = await Promise.all([
+      const [press, cats, movs, dolar, sep] = await Promise.all([
         db.presupuestos.toArray(),
         db.categorias.toArray(),
+        db.movimientos.toArray(),
         getAjuste('dolarMep'),
         getAjuste('separadorDecimal'),
       ]);
       setPresupuestos(press);
       setCategorias(cats);
+      setMovimientos(movs.filter(m => m.tipo === 'gasto' && mismoMes(m.fecha)));
       setDolarMep(parseFloat(dolar) || 1000);
       setSeparador(sep || 'coma');
     }
@@ -40,6 +43,19 @@ export default function Presupuestos() {
 
   function getCat(id) { return categorias.find(c => c.id === id)?.nombre || '—'; }
   const fmt = v => formatPesos(v, separador);
+
+  // Gastos del mes agrupados por categoría (en ARS)
+  const gastadoPorCategoria = movimientos.reduce((acc, m) => {
+    const enARS = m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe;
+    acc[m.categoriaId] = (acc[m.categoriaId] || 0) + enARS;
+    return acc;
+  }, {});
+
+  function barColor(pct) {
+    if (pct >= 90) return 'var(--rojo)';
+    if (pct >= 70) return '#f97316';
+    return 'var(--verde)';
+  }
 
   const pesos = presupuestos.filter(p => p.moneda === 'Pesos');
   const dolares = presupuestos.filter(p => p.moneda === 'Dólares');
@@ -61,6 +77,28 @@ export default function Presupuestos() {
           <span className="resumen-label">Total Presupuesto Mensual</span>
           <span className="resumen-valor">{fmt(totalPresupuesto)}</span>
         </div>
+        {presupuestos.length > 0 && (
+          <>
+            <div className="resumen-divider" />
+            {presupuestos.map(p => {
+              const presupARS = p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe;
+              const gastado = gastadoPorCategoria[p.categoriaId] || 0;
+              const pct = presupARS > 0 ? Math.min(100, (gastado / presupARS) * 100) : 0;
+              const color = barColor(pct);
+              return (
+                <div key={p.id} className="presupuesto-progreso">
+                  <div className="presupuesto-progreso-header">
+                    <span>{p.empresa}</span>
+                    <span style={{ color }}>{Math.round(pct)}%</span>
+                  </div>
+                  <div className="presupuesto-progreso-bar">
+                    <div className="presupuesto-progreso-fill" style={{ width: `${pct}%`, background: color }} />
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       <div className="section-header">

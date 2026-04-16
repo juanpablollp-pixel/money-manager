@@ -752,6 +752,33 @@ html, body, #root {
   gap: 3px;
 }
 
+/* Barras de progreso en resumen de presupuestos */
+.presupuesto-progreso {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.presupuesto-progreso-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--negro);
+}
+.presupuesto-progreso-bar {
+  height: 6px;
+  background: var(--slate-100);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.presupuesto-progreso-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.4s ease, background-color 0.4s ease;
+  min-width: 2px;
+}
+
 /* Empty state */
 .empty {
   text-align: center;

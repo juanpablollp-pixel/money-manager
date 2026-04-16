@@ -38,7 +38,11 @@ export default function Inicio() {
         getAjuste('separadorDecimal'),
         getAjuste('dolarMep'),
       ]);
-      setMovimientos(movs.sort((a, b) => b.fecha.localeCompare(a.fecha)));
+      setMovimientos(movs.sort((a, b) => {
+        const byFecha = b.fecha.localeCompare(a.fecha);
+        if (byFecha !== 0) return byFecha;
+        return b.id - a.id;
+      }));
       setPresupuestos(press);
       setCarteras(carts);
       setCategorias(cats);
