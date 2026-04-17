@@ -57,6 +57,9 @@ export default function Presupuestos() {
     return 'var(--verde)';
   }
 
+  const gastosHuerfanos = Object.entries(gastadoPorCategoria)
+    .filter(([catId]) => !presupuestos.some(p => p.categoriaId === Number(catId)));
+
   const pesos = presupuestos.filter(p => p.moneda === 'Pesos');
   const dolares = presupuestos.filter(p => p.moneda === 'Dólares');
 
@@ -96,11 +99,14 @@ export default function Presupuestos() {
                   <div className="presupuesto-progreso-header">
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       <span>{p.empresa}</span>
-                      {gastado > 0 && (
-                        <span style={{ fontSize: '0.72rem', color: 'var(--gris-oscuro)' }}>
-                          {fmt(gastado)} usado — Resta {fmt(presupARS - gastado)}
-                        </span>
-                      )}
+                      {gastado > 0 && (() => {
+                        const resta = presupARS - gastado;
+                        return (
+                          <span style={{ fontSize: '0.72rem', color: resta < 0 ? 'var(--rojo)' : 'var(--gris-oscuro)' }}>
+                            {fmt(gastado)} usado — {resta < 0 ? `Excedido ${fmt(Math.abs(resta))}` : `Resta ${fmt(resta)}`}
+                          </span>
+                        );
+                      })()}
                     </div>
                     <span style={{ color }}>{Math.round(pct)}%</span>
                   </div>
@@ -113,6 +119,23 @@ export default function Presupuestos() {
           </>
         )}
       </div>
+
+      {gastosHuerfanos.length > 0 && (
+        <>
+          <div className="section-header">
+            <div className="section-title">Sin presupuesto asignado</div>
+            <div className="section-line" />
+          </div>
+          <div className="resumen">
+            {gastosHuerfanos.map(([catId, total]) => (
+              <div key={catId} className="resumen-row">
+                <span className="resumen-label" style={{ color: 'var(--rojo)' }}>{getCat(Number(catId))}</span>
+                <span className="resumen-valor" style={{ color: 'var(--rojo)' }}>{fmt(total)}</span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
 
       <div className="section-header">
         <div className="section-title">Detalle de Presupuestos</div>

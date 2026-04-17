@@ -77,7 +77,12 @@ export default function Inicio() {
     .filter(c => c.enBalance)
     .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
 
-  const totalDejarEnCuenta = presupuestoTotal - totalGastado;
+  const gastadoEnPresupuestados = movsMes
+    .filter(m => m.tipo === 'gasto')
+    .filter(m => presupuestos.some(p => p.categoriaId === m.categoriaId))
+    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+
+  const totalDejarEnCuenta = presupuestoTotal - gastadoEnPresupuestados;
   const totalDespuesGastos = balanceCuenta - totalDejarEnCuenta;
 
   const ahorros = carteras

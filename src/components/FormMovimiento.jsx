@@ -41,7 +41,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
     if (!empresa || !importe) return;
     const nuevoImporte = parseFloat(String(importe).replace(',', '.'));
     const nuevaCarteraId = Number(carteraId);
-    const data = { tipo, fecha, empresa, categoriaId: Number(categoriaId), carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
+    const data = { tipo, fecha, empresa, categoriaId: categoriaId ? Number(categoriaId) : null, carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
 
     if (initial?.id) {
       // Revertir efecto del movimiento original sobre su cartera
