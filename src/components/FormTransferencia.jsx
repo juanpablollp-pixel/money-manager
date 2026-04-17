@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../db/database';
+import { db, getAjuste } from '../db/database';
 import { hoy } from '../utils/format';
 
 export default function FormTransferencia({ initial = null, onSave, onClose }) {
@@ -10,8 +10,21 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
   const [fecha, setFecha] = useState(initial?.fecha || hoy());
   const [comentarios, setComentarios] = useState(initial?.comentarios || '');
   const [carteras, setCarteras] = useState([]);
+  const [dolarMep, setDolarMep] = useState(1000);
 
-  useEffect(() => { db.carteras.toArray().then(setCarteras); }, []);
+  useEffect(() => {
+    Promise.all([db.carteras.toArray(), getAjuste('dolarMep')]).then(([carts, dolar]) => {
+      setCarteras(carts);
+      setDolarMep(parseFloat(dolar) || 1000);
+    });
+  }, []);
+
+  function toNativa(imp, transferMoneda, cartera) {
+    if (!cartera || transferMoneda === cartera.moneda) return imp;
+    if (transferMoneda === 'Dólares' && cartera.moneda === 'Pesos') return imp * dolarMep;
+    if (transferMoneda === 'Pesos' && cartera.moneda === 'Dólares') return imp / dolarMep;
+    return imp;
+  }
 
   async function handleSave() {
     if (!origen || !destino || !importe) return;
@@ -20,18 +33,27 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
     const nuevoDestino = Number(destino);
     const data = { cuentaOrigen: nuevoOrigen, cuentaDestino: nuevoDestino, importe: nuevoImporte, moneda, fecha, comentarios, createdAt: Date.now() };
 
+    const carteraOrigen = carteras.find(c => c.id === nuevoOrigen);
+    const carteraDestino = carteras.find(c => c.id === nuevoDestino);
+    const importeOrigen = toNativa(nuevoImporte, moneda, carteraOrigen);
+    const importeDestino = toNativa(nuevoImporte, moneda, carteraDestino);
+
     if (initial?.id) {
       // Revertir efecto de la transferencia original
-      await db.carteras.where('id').equals(initial.cuentaOrigen).modify(c => { c.importe += initial.importe; });
-      await db.carteras.where('id').equals(initial.cuentaDestino).modify(c => { c.importe -= initial.importe; });
+      const carteraOrigenOld = carteras.find(c => c.id === initial.cuentaOrigen);
+      const carteraDestinoOld = carteras.find(c => c.id === initial.cuentaDestino);
+      const importeOrigenOld = toNativa(initial.importe, initial.moneda, carteraOrigenOld);
+      const importeDestinoOld = toNativa(initial.importe, initial.moneda, carteraDestinoOld);
+      await db.carteras.where('id').equals(initial.cuentaOrigen).modify(c => { c.importe += importeOrigenOld; });
+      await db.carteras.where('id').equals(initial.cuentaDestino).modify(c => { c.importe -= importeDestinoOld; });
       // Aplicar efecto de la transferencia nueva
-      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= nuevoImporte; });
-      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += nuevoImporte; });
+      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= importeOrigen; });
+      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += importeDestino; });
       await db.transferencias.update(initial.id, data);
     } else {
       await db.transferencias.add(data);
-      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= nuevoImporte; });
-      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += nuevoImporte; });
+      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= importeOrigen; });
+      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += importeDestino; });
     }
 
     onSave?.(); onClose?.();
