@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../db/database';
+import { db, getAjuste } from '../db/database';
 import { formatPesos } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
@@ -13,12 +13,22 @@ export default function Carteras() {
   const { refreshKey, triggerRefresh } = useApp();
   const [carteras, setCarteras] = useState([]);
   const [transferencias, setTransferencias] = useState([]);
+  const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
   const [showHistorial, setShowHistorial] = useState(false);
 
   useEffect(() => {
-    db.carteras.toArray().then(setCarteras);
-    db.transferencias.orderBy('fecha').reverse().toArray().then(setTransferencias);
+    async function load() {
+      const [carts, trans, sep] = await Promise.all([
+        db.carteras.toArray(),
+        db.transferencias.orderBy('fecha').reverse().toArray(),
+        getAjuste('separadorDecimal'),
+      ]);
+      setCarteras(carts);
+      setTransferencias(trans);
+      setSeparador(sep || 'coma');
+    }
+    load();
   }, [refreshKey]);
 
   async function toggleBalance(c) {
@@ -40,6 +50,8 @@ export default function Carteras() {
     }
     triggerRefresh();
   }
+
+  const fmt = v => formatPesos(v, separador);
 
   const gastos = carteras.filter(c => c.tipo === 'gastos');
   const ahorros = carteras.filter(c => c.tipo === 'ahorros');
@@ -70,7 +82,7 @@ export default function Carteras() {
         {gastos.map(c => (
           <div key={c.id} className="cartera-card">
             <span className="cartera-nombre">{c.nombre}</span>
-            <span className="cartera-monto">{formatPesos(c.importe)}</span>
+            <span className="cartera-monto">{fmt(c.importe)}</span>
             <span className="cartera-tipo">{c.tipoCuenta}</span>
             <div className="cartera-actions" style={{ gridRow: 'span 2', alignSelf: 'start' }}>
               <button className="btn-ojo" onClick={() => toggleBalance(c)}>
@@ -89,7 +101,7 @@ export default function Carteras() {
         {ahorros.map(c => (
           <div key={c.id} className="cartera-card ahorro">
             <span className="cartera-nombre">{c.nombre}</span>
-            <span className="cartera-monto">{formatPesos(c.importe)}</span>
+            <span className="cartera-monto">{fmt(c.importe)}</span>
             <span className="cartera-tipo">{c.tipoCuenta}</span>
             <div className="cartera-actions" style={{ gridRow: 'span 2', alignSelf: 'start' }}>
               <button className="btn-ojo" onClick={() => toggleBalance(c)}>
@@ -126,7 +138,7 @@ export default function Carteras() {
               <div key={t.id} className="card">
                 <div className="card-grid">
                   <span className="card-cat">{getNombreCartera(t.cuentaOrigen)} → {getNombreCartera(t.cuentaDestino)}</span>
-                  <span className="card-importe">{formatPesos(t.importe)}</span>
+                  <span className="card-importe">{fmt(t.importe)}</span>
                   <span className="card-fecha">{t.fecha}</span>
                   <div className="card-actions">
                     <button className="btn-icon rojo" onClick={() => eliminarTransferencia(t.id)}>

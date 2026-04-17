@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../db/database';
+import { db, getAjuste } from '../db/database';
 import { hoy } from '../utils/format';
 
 export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave, onClose }) {
@@ -11,11 +11,31 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
   const [moneda, setMoneda] = useState(initial?.moneda || 'Pesos');
   const [categorias, setCategorias] = useState([]);
   const [carteras, setCarteras] = useState([]);
+  const [dolarMep, setDolarMep] = useState(1000);
 
   useEffect(() => {
-    db.categorias.toArray().then(setCategorias);
-    db.carteras.toArray().then(setCarteras);
+    async function load() {
+      const [cats, carts, dolar, defaultCuenta] = await Promise.all([
+        db.categorias.toArray(),
+        db.carteras.toArray(),
+        getAjuste('dolarMep'),
+        initial ? Promise.resolve(null) : getAjuste('cuentaDefault'),
+      ]);
+      setCategorias(cats);
+      setCarteras(carts);
+      setDolarMep(parseFloat(dolar) || 1000);
+      if (!initial && defaultCuenta) setCarteraId(String(defaultCuenta));
+    }
+    load();
   }, []);
+
+  function toCarteraNativa(importe, movMoneda, cartera) {
+    if (!cartera) return importe;
+    if (movMoneda === cartera.moneda) return importe;
+    if (movMoneda === 'Dólares' && cartera.moneda === 'Pesos') return importe * dolarMep;
+    if (movMoneda === 'Pesos' && cartera.moneda === 'Dólares') return importe / dolarMep;
+    return importe;
+  }
 
   async function handleSave() {
     if (!empresa || !importe) return;
@@ -25,20 +45,26 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
 
     if (initial?.id) {
       // Revertir efecto del movimiento original sobre su cartera
-      const oldDelta = initial.tipo === 'ingreso' ? -initial.importe : initial.importe;
       if (initial.carteraId) {
+        const carteraOrigen = carteras.find(c => c.id === initial.carteraId);
+        const importeNativoOld = toCarteraNativa(initial.importe, initial.moneda, carteraOrigen);
+        const oldDelta = initial.tipo === 'ingreso' ? -importeNativoOld : importeNativoOld;
         await db.carteras.where('id').equals(initial.carteraId).modify(c => { c.importe += oldDelta; });
       }
       // Aplicar efecto del movimiento nuevo sobre su cartera
-      const newDelta = tipo === 'ingreso' ? nuevoImporte : -nuevoImporte;
       if (nuevaCarteraId) {
+        const carteraDestino = carteras.find(c => c.id === nuevaCarteraId);
+        const importeNativoNew = toCarteraNativa(nuevoImporte, moneda, carteraDestino);
+        const newDelta = tipo === 'ingreso' ? importeNativoNew : -importeNativoNew;
         await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += newDelta; });
       }
       await db.movimientos.update(initial.id, data);
     } else {
       await db.movimientos.add(data);
-      const delta = tipo === 'ingreso' ? nuevoImporte : -nuevoImporte;
       if (nuevaCarteraId) {
+        const carteraDestino = carteras.find(c => c.id === nuevaCarteraId);
+        const importeNativo = toCarteraNativa(nuevoImporte, moneda, carteraDestino);
+        const delta = tipo === 'ingreso' ? importeNativo : -importeNativo;
         await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += delta; });
       }
     }

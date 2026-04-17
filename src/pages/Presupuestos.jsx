@@ -81,12 +81,10 @@ export default function Presupuestos() {
           <>
             <div className="resumen-divider" />
             {[...presupuestos].sort((a, b) => {
-              const pctA = (a.moneda === 'Dólares' ? a.importe * dolarMep : a.importe) > 0
-                ? (gastadoPorCategoria[a.categoriaId] || 0) / (a.moneda === 'Dólares' ? a.importe * dolarMep : a.importe)
-                : 0;
-              const pctB = (b.moneda === 'Dólares' ? b.importe * dolarMep : b.importe) > 0
-                ? (gastadoPorCategoria[b.categoriaId] || 0) / (b.moneda === 'Dólares' ? b.importe * dolarMep : b.importe)
-                : 0;
+              const arsA = a.moneda === 'Dólares' ? a.importe * dolarMep : a.importe;
+              const arsB = b.moneda === 'Dólares' ? b.importe * dolarMep : b.importe;
+              const pctA = arsA > 0 ? (gastadoPorCategoria[a.categoriaId] || 0) / arsA : 0;
+              const pctB = arsB > 0 ? (gastadoPorCategoria[b.categoriaId] || 0) / arsB : 0;
               return pctA - pctB;
             }).map(p => {
               const presupARS = p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe;

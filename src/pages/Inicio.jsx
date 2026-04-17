@@ -107,7 +107,13 @@ export default function Inicio() {
     const mov = await db.movimientos.get(id);
     await db.movimientos.delete(id);
     if (mov?.carteraId) {
-      const delta = mov.tipo === 'ingreso' ? -mov.importe : mov.importe;
+      const cartera = carteras.find(c => c.id === mov.carteraId);
+      let importeNativo = mov.importe;
+      if (cartera && mov.moneda !== cartera.moneda) {
+        if (mov.moneda === 'Dólares' && cartera.moneda === 'Pesos') importeNativo = mov.importe * dolarMep;
+        if (mov.moneda === 'Pesos' && cartera.moneda === 'Dólares') importeNativo = mov.importe / dolarMep;
+      }
+      const delta = mov.tipo === 'ingreso' ? -importeNativo : importeNativo;
       await db.carteras.where('id').equals(mov.carteraId).modify(c => { c.importe += delta; });
     }
     triggerRefresh();
