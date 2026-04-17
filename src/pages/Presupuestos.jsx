@@ -97,7 +97,7 @@ export default function Presupuestos() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       <span>{p.empresa}</span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--gris-oscuro)' }}>
-                        {fmt(gastado)} usado de {fmt(presupARS)}
+                        {fmt(gastado)} usado — Resta {fmt(presupARS - gastado)}
                       </span>
                     </div>
                     <span style={{ color }}>{Math.round(pct)}%</span>
