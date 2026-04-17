@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import MenuOverlay from './components/MenuOverlay';
 import Inicio from './pages/Inicio';
@@ -11,7 +11,7 @@ import './index.css';
 
 export default function App() {
   return (
-    <BrowserRouter basename="/money-manager">
+    <HashRouter>
       <AppProvider>
         <MenuOverlay />
         <Routes>
@@ -23,6 +23,6 @@ export default function App() {
           <Route path="/ajustes" element={<Ajustes />} />
         </Routes>
       </AppProvider>
-    </BrowserRouter>
+    </HashRouter>
   );
 }
