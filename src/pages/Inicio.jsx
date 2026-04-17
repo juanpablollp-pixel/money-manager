@@ -55,9 +55,13 @@ export default function Inicio() {
 
   const fmt = v => formatPesos(v, separador);
 
-  const presupuestoTotal = presupuestos.reduce((acc, p) => {
-    return acc + (p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe);
-  }, 0);
+  const presupuestoTotalPesos = presupuestos
+    .filter(p => p.moneda === 'Pesos')
+    .reduce((acc, p) => acc + p.importe, 0);
+
+  const presupuestoTotalUSD = presupuestos
+    .filter(p => p.moneda === 'Dólares')
+    .reduce((acc, p) => acc + p.importe, 0);
 
   const movsMes = movimientos.filter(m => mismoMes(m.fecha));
 
@@ -79,10 +83,18 @@ export default function Inicio() {
 
   const gastadoEnPresupuestados = movsMes
     .filter(m => m.tipo === 'gasto')
-    .filter(m => presupuestos.some(p => p.categoriaId === m.categoriaId))
+    .filter(m => presupuestos.some(p => p.categoriaId === m.categoriaId && p.moneda === 'Pesos'))
     .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
 
-  const totalDejarEnCuenta = presupuestoTotal - gastadoEnPresupuestados;
+  const gastadoUSD = movsMes
+    .filter(m => m.tipo === 'gasto' && m.moneda === 'Dólares')
+    .filter(m => presupuestos.some(p => p.categoriaId === m.categoriaId && p.moneda === 'Dólares'))
+    .reduce((acc, m) => acc + m.importe, 0);
+
+  // Solo display — no afecta ningún cálculo del sistema
+  const pendienteUSD = presupuestoTotalUSD - gastadoUSD;
+
+  const totalDejarEnCuenta = presupuestoTotalPesos - gastadoEnPresupuestados;
   const totalDespuesGastos = balanceCuenta - totalDejarEnCuenta;
 
   const ahorros = carteras
@@ -146,8 +158,16 @@ export default function Inicio() {
         </div>
         <div className="resumen-row">
           <span className="resumen-label">Presupuesto Mensual</span>
-          <span className="resumen-valor">{fmt(presupuestoTotal)}</span>
+          <span className="resumen-valor">{fmt(presupuestoTotalPesos)}</span>
         </div>
+        {pendienteUSD > 0 && (
+          <div className="resumen-row">
+            <span className="resumen-label" style={{ color: 'var(--gris-oscuro)' }}>Pendiente en USD</span>
+            <span className="resumen-valor" style={{ color: 'var(--gris-oscuro)', fontSize: '0.88rem' }}>
+              ${pendienteUSD.toFixed(2)} → {fmt(pendienteUSD * dolarMep)}
+            </span>
+          </div>
+        )}
         <div className="resumen-row">
           <span className="resumen-label">Total a Dejar en Cuenta</span>
           <span className="resumen-valor">{fmt(totalDejarEnCuenta)}</span>
