@@ -96,7 +96,12 @@ export default function Presupuestos() {
               return (
                 <div key={p.id} className="presupuesto-progreso">
                   <div className="presupuesto-progreso-header">
-                    <span>{p.empresa}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <span>{p.empresa}</span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--gris-oscuro)' }}>
+                        {fmt(gastado)} usado de {fmt(presupARS)}
+                      </span>
+                    </div>
                     <span style={{ color }}>{Math.round(pct)}%</span>
                   </div>
                   <div className="presupuesto-progreso-bar">
