@@ -33,6 +33,7 @@
 
 html {
   height: -webkit-fill-available;
+  height: 100%;
 }
 body, #root {
   height: 100%;
@@ -42,7 +43,25 @@ body, #root {
   font-family: var(--font-body);
   font-weight: 500;
   -webkit-font-smoothing: antialiased;
-  overscroll-behavior: none;
+}
+
+/* App shell: columna flex que ocupa toda la pantalla */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Contenedor scrolleable del contenido */
+.app-content {
+  flex: 1;
+  height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
 }
 
 /* Scrollbar mínimo */
@@ -54,11 +73,11 @@ body, #root {
   max-width: 480px;
   margin: 0 auto;
   padding: 16px;
-  padding-top: calc(16px + env(safe-area-inset-top));
-  padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  padding-top: 16px;
+  padding-bottom: 24px;
   padding-left: calc(16px + env(safe-area-inset-left));
   padding-right: calc(16px + env(safe-area-inset-right));
-  min-height: 100svh;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -852,12 +871,9 @@ body, #root {
   color: var(--slate-400);
 }
 
-/* Bottom Tab Bar */
+/* Bottom Tab Bar — elemento estático al fondo del app-shell */
 .tab-bar {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   height: calc(58px + env(safe-area-inset-bottom));
   background: var(--blanco);
   border-top: 1px solid var(--card-border);
@@ -865,7 +881,6 @@ body, #root {
   align-items: flex-start;
   padding-top: 8px;
   padding-bottom: env(safe-area-inset-bottom);
-  z-index: 50;
 }
 
 .tab-bar-item {
