@@ -163,7 +163,7 @@ export default function Inicio() {
         </div>
         <div className="resumen-row">
           <span className="resumen-label">Presupuesto Mensual</span>
-          <span className="resumen-valor">{fmt(presupuestoTotalPesos)}</span>
+          <span className="resumen-valor">{fmt(presupuestoTotalPesos + pendienteUSD * dolarMep)}</span>
         </div>
         {pendienteUSD > 0 && (
           <div className="resumen-row">
