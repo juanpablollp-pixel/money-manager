@@ -3,6 +3,7 @@ import { db, getAjuste } from '../db/database';
 import { hoy } from '../utils/format';
 
 export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave, onClose }) {
+  const [tipoActivo, setTipoActivo] = useState(initial?.tipo || tipo);
   const [fecha, setFecha] = useState(initial?.fecha || hoy());
   const [empresa, setEmpresa] = useState(initial?.empresa || '');
   const [categoriaId, setCategoriaId] = useState(initial?.categoriaId || '');
@@ -29,6 +30,11 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
     load();
   }, []);
 
+  function cambiarTipo(nuevoTipo) {
+    setTipoActivo(nuevoTipo);
+    setCategoriaId('');
+  }
+
   function toCarteraNativa(importe, movMoneda, cartera) {
     if (!cartera) return importe;
     if (movMoneda === cartera.moneda) return importe;
@@ -41,21 +47,19 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
     if (!empresa || !importe) return;
     const nuevoImporte = parseFloat(String(importe).replace(',', '.'));
     const nuevaCarteraId = Number(carteraId);
-    const data = { tipo, fecha, empresa, categoriaId: categoriaId ? Number(categoriaId) : null, carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
+    const data = { tipo: tipoActivo, fecha, empresa, categoriaId: categoriaId ? Number(categoriaId) : null, carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
 
     if (initial?.id) {
-      // Revertir efecto del movimiento original sobre su cartera
       if (initial.carteraId) {
         const carteraOrigen = carteras.find(c => c.id === initial.carteraId);
         const importeNativoOld = toCarteraNativa(initial.importe, initial.moneda, carteraOrigen);
         const oldDelta = initial.tipo === 'ingreso' ? -importeNativoOld : importeNativoOld;
         await db.carteras.where('id').equals(initial.carteraId).modify(c => { c.importe += oldDelta; });
       }
-      // Aplicar efecto del movimiento nuevo sobre su cartera
       if (nuevaCarteraId) {
         const carteraDestino = carteras.find(c => c.id === nuevaCarteraId);
         const importeNativoNew = toCarteraNativa(nuevoImporte, moneda, carteraDestino);
-        const newDelta = tipo === 'ingreso' ? importeNativoNew : -importeNativoNew;
+        const newDelta = tipoActivo === 'ingreso' ? importeNativoNew : -importeNativoNew;
         await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += newDelta; });
       }
       await db.movimientos.update(initial.id, data);
@@ -64,7 +68,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
       if (nuevaCarteraId) {
         const carteraDestino = carteras.find(c => c.id === nuevaCarteraId);
         const importeNativo = toCarteraNativa(nuevoImporte, moneda, carteraDestino);
-        const delta = tipo === 'ingreso' ? importeNativo : -importeNativo;
+        const delta = tipoActivo === 'ingreso' ? importeNativo : -importeNativo;
         await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += delta; });
       }
     }
@@ -73,7 +77,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
     onClose?.();
   }
 
-  const isGasto = tipo === 'gasto';
+  const isGasto = tipoActivo === 'gasto';
   const accentColor = isGasto ? 'var(--rojo)' : 'var(--verde)';
 
   return (
@@ -81,6 +85,24 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
       <div className="modal-title" style={{ color: accentColor }}>
         {initial ? 'Editar' : 'Nuevo'} {isGasto ? 'Gasto' : 'Ingreso'}
       </div>
+
+      {!initial && (
+        <div className="toggle-row">
+          <button
+            className={`toggle-btn${isGasto ? ' active-no' : ''}`}
+            onClick={() => cambiarTipo('gasto')}
+          >
+            Gasto
+          </button>
+          <button
+            className={`toggle-btn${!isGasto ? ' active-si' : ''}`}
+            onClick={() => cambiarTipo('ingreso')}
+          >
+            Ingreso
+          </button>
+        </div>
+      )}
+
       <div className="form-card">
         <div className="form-section-title">Información General</div>
         <div className="form-group">

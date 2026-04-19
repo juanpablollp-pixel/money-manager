@@ -2,11 +2,16 @@ import { useState, useEffect } from 'react';
 import { db, getAjuste, setAjuste } from '../db/database';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
-import { Upload, Download, RefreshCw } from 'lucide-react';
+import Modal from '../components/Modal';
+import FormCategoria from '../components/FormCategoria';
+import { Upload, Download, RefreshCw, Pencil, X } from 'lucide-react';
+import FitButton from '../components/FitButton';
 
 export default function Ajustes() {
-  const { triggerRefresh } = useApp();
+  const { triggerRefresh, refreshKey } = useApp();
   const [carteras, setCarteras] = useState([]);
+  const [categorias, setCategorias] = useState([]);
+  const [modalCat, setModalCat] = useState(null);
   const [loadingDolar, setLoadingDolar] = useState(false);
   const [vals, setVals] = useState({
     dolarMep: '',
@@ -18,8 +23,9 @@ export default function Ajustes() {
 
   useEffect(() => {
     async function load() {
-      const [carts, dolar, periodo, cuenta, dia, sep] = await Promise.all([
+      const [carts, cats, dolar, periodo, cuenta, dia, sep] = await Promise.all([
         db.carteras.toArray(),
+        db.categorias.toArray(),
         getAjuste('dolarMep'),
         getAjuste('periodoDefault'),
         getAjuste('cuentaDefault'),
@@ -27,6 +33,7 @@ export default function Ajustes() {
         getAjuste('separadorDecimal'),
       ]);
       setCarteras(carts);
+      setCategorias(cats);
       setVals({
         dolarMep: dolar || '',
         periodoDefault: periodo || 'mensual',
@@ -36,7 +43,7 @@ export default function Ajustes() {
       });
     }
     load();
-  }, []);
+  }, [refreshKey]);
 
   async function update(clave, valor) {
     setVals(v => ({ ...v, [clave]: valor }));
@@ -94,6 +101,15 @@ export default function Ajustes() {
       alert('Backup restaurado correctamente.');
     } catch { alert('Archivo inválido.'); }
   }
+
+  async function eliminarCat(id) {
+    if (!confirm('¿Eliminar?')) return;
+    await db.categorias.delete(id);
+    triggerRefresh();
+  }
+
+  const gastos = categorias.filter(c => c.tipo === 'gastos');
+  const ingresos = categorias.filter(c => c.tipo === 'ingresos');
 
   return (
     <div className="page">
@@ -181,6 +197,51 @@ export default function Ajustes() {
           <option value="coma">Coma 0,1</option>
         </select>
       </div>
+
+      {/* Categorías */}
+      <div className="section-header" style={{ marginTop: 8 }}>
+        <div className="section-title">Categorías</div>
+        <div className="section-line" />
+      </div>
+
+      <FitButton className="btn-main negro full" onClick={() => setModalCat({})}>
+        Agregar Categoría
+      </FitButton>
+
+      <div className="cards-list" style={{ paddingBottom: 0 }}>
+        {gastos.length > 0 && (
+          <div style={{ fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--rojo)' }}>Gastos</div>
+        )}
+        {gastos.map(c => (
+          <div key={c.id} className="categoria-card">
+            <span className="categoria-nombre">{c.nombre}</span>
+            <div className="card-actions">
+              <button className="btn-icon" onClick={() => setModalCat({ item: c })}><Pencil size={15} /></button>
+              <button className="btn-icon rojo" onClick={() => eliminarCat(c.id)}><X size={15} /></button>
+            </div>
+          </div>
+        ))}
+
+        {ingresos.length > 0 && (
+          <div style={{ fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--verde)', marginTop: 8 }}>Ingresos</div>
+        )}
+        {ingresos.map(c => (
+          <div key={c.id} className="categoria-card">
+            <span className="categoria-nombre">{c.nombre}</span>
+            <div className="card-actions">
+              <button className="btn-icon" onClick={() => setModalCat({ item: c })}><Pencil size={15} /></button>
+              <button className="btn-icon rojo" onClick={() => eliminarCat(c.id)}><X size={15} /></button>
+            </div>
+          </div>
+        ))}
+        {categorias.length === 0 && <div className="empty">Sin categorías</div>}
+      </div>
+
+      {modalCat && (
+        <Modal onClose={() => setModalCat(null)}>
+          <FormCategoria initial={modalCat.item} onSave={triggerRefresh} onClose={() => setModalCat(null)} />
+        </Modal>
+      )}
     </div>
   );
 }
