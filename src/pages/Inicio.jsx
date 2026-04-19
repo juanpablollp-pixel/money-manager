@@ -81,10 +81,15 @@ export default function Inicio() {
     .filter(c => c.enBalance)
     .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
 
-  const gastadoEnPresupuestados = movsMes
-    .filter(m => m.tipo === 'gasto')
-    .filter(m => presupuestos.some(p => p.categoriaId === m.categoriaId && p.moneda === 'Pesos'))
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+  // Por categoría: contar hasta el límite del presupuesto (el exceso no reduce la obligación restante)
+  const gastadoEnPresupuestados = presupuestos
+    .filter(p => p.moneda === 'Pesos')
+    .reduce((acc, p) => {
+      const gastadoEnCategoria = movsMes
+        .filter(m => m.tipo === 'gasto' && m.categoriaId === p.categoriaId)
+        .reduce((sum, m) => sum + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+      return acc + Math.min(gastadoEnCategoria, p.importe);
+    }, 0);
 
   const gastadoUSD = movsMes
     .filter(m => m.tipo === 'gasto' && m.moneda === 'Dólares')
