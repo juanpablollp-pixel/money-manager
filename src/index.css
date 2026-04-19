@@ -693,6 +693,7 @@ html, body, #root {
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
   padding-left: calc(16px + env(safe-area-inset-left));
   padding-right: calc(16px + env(safe-area-inset-right));
+  touch-action: none;
 }
 .modal-content {
   background: var(--blanco);
@@ -701,6 +702,8 @@ html, body, #root {
   width: 100%;
   max-height: 90dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
   display: flex;
   flex-direction: column;
   gap: 14px;
