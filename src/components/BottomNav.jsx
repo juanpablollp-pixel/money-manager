@@ -6,11 +6,11 @@ import FormMovimiento from './FormMovimiento';
 import { useApp } from '../context/AppContext';
 
 const navItems = [
-  { label: 'Home',      to: '/',              icon: LayoutDashboard },
-  { label: 'Carteras',  to: '/carteras',      icon: Wallet },
+  { to: '/',             icon: LayoutDashboard, label: 'Inicio'      },
+  { to: '/carteras',     icon: Wallet,           label: 'Carteras'    },
   { isFab: true },
-  { label: 'Presup.',   to: '/presupuestos',  icon: PieChart },
-  { label: 'Factura.',  to: '/facturacion',   icon: FileText },
+  { to: '/presupuestos', icon: PieChart,         label: 'Presupuesto' },
+  { to: '/facturacion',  icon: FileText,         label: 'Facturas'    },
 ];
 
 export default function BottomNav() {
@@ -19,47 +19,33 @@ export default function BottomNav() {
   const { triggerRefresh } = useApp();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const activeIndex = navItems.findIndex(item => !item.isFab && item.to === location.pathname);
-  const showIndicator = activeIndex !== -1;
-
   return (
     <>
-      <div className="pill-nav">
-        <div className="pill-nav-track">
-          {showIndicator && (
-            <div
-              className="pill-nav-indicator"
-              style={{ transform: `translateX(${activeIndex * 100}%)` }}
-            />
-          )}
-
-          {navItems.map((item, index) => {
-            if (item.isFab) {
-              return (
-                <div key="fab" className="pill-nav-fab-wrap">
-                  <button className="pill-nav-fab" onClick={() => setModalOpen(true)}>
-                    <Plus size={20} />
-                  </button>
-                </div>
-              );
-            }
-
-            const Icon = item.icon;
-            const isActive = location.pathname === item.to;
-
+      <nav className="bottom-nav">
+        {navItems.map((item, i) => {
+          if (item.isFab) {
             return (
-              <button
-                key={item.to}
-                className={`pill-nav-item${isActive ? ' active' : ''}`}
-                onClick={() => navigate(item.to)}
-              >
-                <Icon size={19} />
-                <span className="pill-nav-label">{item.label}</span>
+              <button key="fab" className="bottom-nav-fab" onClick={() => setModalOpen(true)}>
+                <Plus size={22} />
               </button>
             );
-          })}
-        </div>
-      </div>
+          }
+
+          const Icon = item.icon;
+          const isActive = location.pathname === item.to;
+
+          return (
+            <button
+              key={item.to}
+              className={`bottom-nav-item${isActive ? ' active' : ''}`}
+              onClick={() => navigate(item.to)}
+            >
+              <div className="bottom-nav-icon"><Icon size={22} /></div>
+              <span className="bottom-nav-label">{item.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {modalOpen && (
         <Modal onClose={() => setModalOpen(false)}>
