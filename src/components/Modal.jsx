@@ -3,11 +3,8 @@ import { createPortal } from 'react-dom';
 
 export default function Modal({ children, onClose }) {
   useEffect(() => {
-    const content = document.querySelector('.app-content');
-    if (content) content.style.overflow = 'hidden';
-    return () => {
-      if (content) content.style.overflow = '';
-    };
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
   }, []);
 
   return createPortal(

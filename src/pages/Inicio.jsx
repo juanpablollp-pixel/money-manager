@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
 import { formatPesos, formatFecha, mismoMes } from '../utils/format';
 import { useApp } from '../context/AppContext';
-import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormMovimiento from '../components/FormMovimiento';
 import { Pencil, X, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
@@ -148,9 +147,7 @@ export default function Inicio() {
 
   return (
     <div className="page">
-      <Header title="MoneyManager" />
-
-      <div className="resumen">
+<div className="resumen">
         <div className="resumen-row">
           <span className="resumen-label">Facturación Mensual</span>
           <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(totalFacturado)}</span>

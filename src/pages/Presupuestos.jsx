@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
 import { formatPesos, mismoMes } from '../utils/format';
 import { useApp } from '../context/AppContext';
-import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormPresupuesto from '../components/FormPresupuesto';
 import { Pencil, X } from 'lucide-react';
@@ -69,9 +68,7 @@ export default function Presupuestos() {
 
   return (
     <div className="page">
-      <Header title="Presupuestos" showBack />
-
-      <FitButton className="btn-main negro full" onClick={() => setModal({})}>
+<FitButton className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Nuevo Gasto al Presupuesto
       </FitButton>
 

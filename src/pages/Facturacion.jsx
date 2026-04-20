@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
 import { formatPesos } from '../utils/format';
 import { useApp } from '../context/AppContext';
-import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormFacturacion from '../components/FormFacturacion';
 import { Pencil, X } from 'lucide-react';
@@ -49,9 +48,7 @@ export default function Facturacion() {
 
   return (
     <div className="page">
-      <Header title="Facturación" showBack />
-
-      <FitButton className="btn-main negro full" onClick={() => setModal({})}>
+<FitButton className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Facturación
       </FitButton>
 

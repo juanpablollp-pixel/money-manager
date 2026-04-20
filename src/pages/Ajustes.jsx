@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste, setAjuste } from '../db/database';
 import { useApp } from '../context/AppContext';
-import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormCategoria from '../components/FormCategoria';
 import { Upload, Download, RefreshCw, Pencil, X } from 'lucide-react';
@@ -113,9 +112,7 @@ export default function Ajustes() {
 
   return (
     <div className="page">
-      <Header title="Ajustes" showBack />
-
-      {/* Backup */}
+{/* Backup */}
       <div className="ajuste-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
         <span className="ajuste-label">Backup de Datos</span>
         <div style={{ display: 'flex', gap: 8, width: '100%' }}>

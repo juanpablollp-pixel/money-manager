@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
 import { formatPesos } from '../utils/format';
 import { useApp } from '../context/AppContext';
-import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormCartera from '../components/FormCartera';
 import FormTransferencia from '../components/FormTransferencia';
@@ -62,9 +61,7 @@ export default function Carteras() {
 
   return (
     <div className="page">
-      <Header title="Carteras" showBack />
-
-      <div className="btn-row">
+<div className="btn-row">
         <FitButton className="btn-main gris-claro" onClick={() => setShowHistorial(true)}>Historial de Transf.</FitButton>
         <FitButton className="btn-main gris-oscuro" onClick={() => setModal({ tipo: 'transferencia' })}>Nueva Transferencia</FitButton>
       </div>
