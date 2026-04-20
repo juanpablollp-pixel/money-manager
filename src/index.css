@@ -52,6 +52,10 @@ body, #root {
   height: 100%;
   overflow: hidden;
   padding-top: env(safe-area-inset-top);
+  /* safe-area-inset-bottom se maneja aquí para que funcione
+     correctamente en PWA standalone y en browser */
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--blanco);
 }
 
 /* Contenedor scrolleable del contenido */
@@ -880,7 +884,6 @@ body, #root {
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  padding-bottom: calc(6px + env(safe-area-inset-bottom));
   box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
 }
 
