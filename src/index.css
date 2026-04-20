@@ -32,12 +32,14 @@
 }
 
 html {
-  height: -webkit-fill-available;
   height: 100%;
+  height: -webkit-fill-available;
+  height: 100dvh;
 }
 body, #root {
   height: 100%;
-  min-height: -webkit-fill-available;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--bg);
   color: var(--negro);
   font-family: var(--font-body);
