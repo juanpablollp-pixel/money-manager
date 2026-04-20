@@ -8,23 +8,6 @@ import Facturacion from './pages/Facturacion';
 import Ajustes from './pages/Ajustes';
 import './index.css';
 
-const ROUTE_LABELS = {
-  '/carteras':     'Carteras',
-  '/presupuestos': 'Presupuestos',
-  '/facturacion':  'Facturación',
-  '/ajustes':      'Ajustes',
-};
-
-function HomeIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-      <polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-  );
-}
-
 function GearIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
@@ -37,9 +20,7 @@ function GearIcon() {
 
 function Topbar() {
   const location = useLocation();
-  const navigate  = useNavigate();
-  const isHome    = location.pathname === '/';
-  const label     = ROUTE_LABELS[location.pathname];
+  const navigate = useNavigate();
 
   return (
     <header className="topbar">
@@ -49,24 +30,13 @@ function Topbar() {
           <span className="topbar-logo-text">MoneyManager</span>
         </div>
 
-        {label && <span className="topbar-section-label">{label}</span>}
-
-        <div className="topbar-actions">
-          <button
-            className={`topbar-action${isHome ? ' active' : ''}`}
-            onClick={() => navigate('/')}
-            aria-label="Inicio"
-          >
-            <HomeIcon />
-          </button>
-          <button
-            className={`topbar-action${location.pathname === '/ajustes' ? ' active' : ''}`}
-            onClick={() => navigate('/ajustes')}
-            aria-label="Ajustes"
-          >
-            <GearIcon />
-          </button>
-        </div>
+        <button
+          className={`topbar-action${location.pathname === '/ajustes' ? ' active' : ''}`}
+          onClick={() => navigate('/ajustes')}
+          aria-label="Ajustes"
+        >
+          <GearIcon />
+        </button>
       </div>
     </header>
   );
