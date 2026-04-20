@@ -6,11 +6,11 @@ import FormMovimiento from './FormMovimiento';
 import { useApp } from '../context/AppContext';
 
 const navItems = [
-  { to: '/',             icon: LayoutDashboard },
-  { to: '/carteras',     icon: Wallet },
+  { to: '/',             icon: LayoutDashboard, label: 'Inicio'      },
+  { to: '/carteras',     icon: Wallet,           label: 'Carteras'    },
   { isFab: true },
-  { to: '/presupuestos', icon: PieChart },
-  { to: '/facturacion',  icon: FileText },
+  { to: '/presupuestos', icon: PieChart,         label: 'Presupuesto' },
+  { to: '/facturacion',  icon: FileText,         label: 'Facturas'    },
 ];
 
 export default function BottomNav() {
@@ -21,11 +21,11 @@ export default function BottomNav() {
 
   return (
     <>
-      <nav className="tab-bar">
+      <nav className="bottom-nav">
         {navItems.map((item, i) => {
           if (item.isFab) {
             return (
-              <button key="fab" className="tab-bar-fab" onClick={() => setModalOpen(true)}>
+              <button key="fab" className="bottom-nav-fab" onClick={() => setModalOpen(true)}>
                 <Plus size={22} />
               </button>
             );
@@ -37,11 +37,11 @@ export default function BottomNav() {
           return (
             <button
               key={item.to}
-              className={`tab-bar-item${isActive ? ' active' : ''}`}
+              className={`bottom-nav-item${isActive ? ' active' : ''}`}
               onClick={() => navigate(item.to)}
             >
-              <Icon size={24} />
-              {isActive && <span className="tab-bar-dot" />}
+              <div className="bottom-nav-icon"><Icon size={22} /></div>
+              <span className="bottom-nav-label">{item.label}</span>
             </button>
           );
         })}
