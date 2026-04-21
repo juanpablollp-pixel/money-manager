@@ -229,10 +229,12 @@ export default function Asistente() {
         .typing-dot:nth-child(2){animation-delay:.2s}
         .typing-dot:nth-child(3){animation-delay:.4s}
       `}</style>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#f8fafc' }}>
-        <Header title="Asistente IA" showBack />
+      <div className="page" style={{ padding: 0, gap: 0, minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '16px 16px 8px', paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
+          <Header title="Asistente IA" showBack />
+        </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: '8px 16px 16px' }}>
           {messages.length === 0 && (
             <div style={{ textAlign: 'center', color: '#94a3b8', padding: '40px 20px' }}>
               <div style={{ fontSize: 36, marginBottom: 12 }}>✨</div>
@@ -280,8 +282,10 @@ export default function Asistente() {
         </div>
 
         <div style={{
-          padding: '10px 16px',
+          paddingTop: 10,
           paddingBottom: 'calc(10px + env(safe-area-inset-bottom))',
+          paddingLeft: 16,
+          paddingRight: 16,
           background: '#ffffff',
           borderTop: '1px solid #e2e8f0',
           display: 'flex',
