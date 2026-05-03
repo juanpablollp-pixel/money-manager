@@ -8,6 +8,9 @@ export function AppProvider({ children }) {
   const [refreshKey, setRefreshKey] = useState(0);
   const closeTimerRef = useRef(null);
 
+  const now = new Date();
+  const [periodo, setPeriodo] = useState({ mes: now.getMonth() + 1, anio: now.getFullYear() });
+
   const triggerRefresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
   const closeMenu = useCallback(() => {
@@ -19,8 +22,25 @@ export function AppProvider({ children }) {
     }, 220);
   }, []);
 
+  function periodoAnterior() {
+    setPeriodo(p => p.mes === 1 ? { mes: 12, anio: p.anio - 1 } : { mes: p.mes - 1, anio: p.anio });
+  }
+
+  function periodoSiguiente() {
+    const n = new Date();
+    const mesHoy = n.getMonth() + 1;
+    const anioHoy = n.getFullYear();
+    setPeriodo(p => {
+      if (p.anio > anioHoy || (p.anio === anioHoy && p.mes >= mesHoy)) return p;
+      return p.mes === 12 ? { mes: 1, anio: p.anio + 1 } : { mes: p.mes + 1, anio: p.anio };
+    });
+  }
+
+  const n2 = new Date();
+  const esPeriodoActual = periodo.mes === n2.getMonth() + 1 && periodo.anio === n2.getFullYear();
+
   return (
-    <AppContext.Provider value={{ menuOpen, setMenuOpen, menuClosing, closeMenu, refreshKey, triggerRefresh }}>
+    <AppContext.Provider value={{ menuOpen, setMenuOpen, menuClosing, closeMenu, refreshKey, triggerRefresh, periodo, periodoAnterior, periodoSiguiente, esPeriodoActual }}>
       {children}
     </AppContext.Provider>
   );

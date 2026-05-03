@@ -1,6 +1,7 @@
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { X, LayoutDashboard, Wallet, PieChart, FileText, Tag, Settings } from 'lucide-react';
+import { X, LayoutDashboard, Wallet, PieChart, FileText, Tag, Settings, FileDown } from 'lucide-react';
+import { exportarReportePDF } from '../utils/pdfReport';
 
 const items = [
   { label: 'Inicio', to: '/', icon: LayoutDashboard, iconBg: '#eff6ff', iconColor: '#3b82f6' },
@@ -11,7 +12,7 @@ const items = [
 ];
 
 export default function MenuOverlay() {
-  const { menuOpen, menuClosing, closeMenu } = useApp();
+  const { menuOpen, menuClosing, closeMenu, periodo } = useApp();
   const navigate = useNavigate();
 
   if (!menuOpen && !menuClosing) return null;
@@ -47,6 +48,12 @@ export default function MenuOverlay() {
         </nav>
 
         <div className="menu-footer">
+          <button className="menu-item" onClick={() => { closeMenu(); exportarReportePDF(periodo); }}>
+            <div className="menu-item-icon" style={{ background: '#f0fdf4', color: '#16a34a' }}>
+              <FileDown size={18} />
+            </div>
+            Exportar PDF
+          </button>
           <button className="menu-item" onClick={() => go('/ajustes')}>
             <div className="menu-item-icon" style={{ background: '#f1f5f9', color: '#64748b' }}>
               <Settings size={18} />

@@ -27,3 +27,14 @@ export function mismoMes(fechaStr) {
   const d = new Date(fechaStr + 'T00:00:00');
   return d.getMonth() + 1 === mes && d.getFullYear() === anio;
 }
+
+export function esMismoPeriodo(fechaStr, mes, anio) {
+  const d = new Date(fechaStr + 'T00:00:00');
+  return d.getMonth() + 1 === mes && d.getFullYear() === anio;
+}
+
+export const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+export function nombreMes(mes) {
+  return MESES[mes - 1];
+}

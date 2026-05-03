@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
-import { formatPesos, mismoMes } from '../utils/format';
+import { formatPesos, esMismoPeriodo } from '../utils/format';
 import { useApp } from '../context/AppContext';
+import PeriodSelector from '../components/PeriodSelector';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormPresupuesto from '../components/FormPresupuesto';
@@ -9,7 +10,7 @@ import { Pencil, X } from 'lucide-react';
 import FitButton from '../components/FitButton';
 
 export default function Presupuestos() {
-  const { refreshKey, triggerRefresh } = useApp();
+  const { refreshKey, triggerRefresh, periodo } = useApp();
   const [presupuestos, setPresupuestos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [movimientos, setMovimientos] = useState([]);
@@ -28,12 +29,12 @@ export default function Presupuestos() {
       ]);
       setPresupuestos(press);
       setCategorias(cats);
-      setMovimientos(movs.filter(m => m.tipo === 'gasto' && mismoMes(m.fecha)));
+      setMovimientos(movs.filter(m => m.tipo === 'gasto' && esMismoPeriodo(m.fecha, periodo.mes, periodo.anio)));
       setDolarMep(parseFloat(dolar) || 1000);
       setSeparador(sep || 'coma');
     }
     load();
-  }, [refreshKey]);
+  }, [refreshKey, periodo]);
 
   async function eliminar(id) {
     if (!confirm('¿Eliminar?')) return;
@@ -74,6 +75,8 @@ export default function Presupuestos() {
       <FitButton className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Nuevo Gasto al Presupuesto
       </FitButton>
+
+      <PeriodSelector />
 
       <div className="resumen">
         <div className="resumen-row">

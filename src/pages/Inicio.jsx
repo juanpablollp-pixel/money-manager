@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
-import { formatPesos, formatFecha, mismoMes } from '../utils/format';
+import { formatPesos, formatFecha, esMismoPeriodo } from '../utils/format';
 import { useApp } from '../context/AppContext';
+import PeriodSelector from '../components/PeriodSelector';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormMovimiento from '../components/FormMovimiento';
@@ -9,7 +10,7 @@ import { Pencil, X, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 import FitButton from '../components/FitButton';
 
 export default function Inicio() {
-  const { refreshKey, triggerRefresh } = useApp();
+  const { refreshKey, triggerRefresh, periodo } = useApp();
   const [movimientos, setMovimientos] = useState([]);
   const [presupuestos, setPresupuestos] = useState([]);
   const [carteras, setCarteras] = useState([]);
@@ -25,10 +26,6 @@ export default function Inicio() {
 
   useEffect(() => {
     async function load() {
-      const now = new Date();
-      const mesActual = now.getMonth() + 1;
-      const anioActual = now.getFullYear();
-
       const [movs, press, carts, cats, facts, sep, dolar] = await Promise.all([
         db.movimientos.toArray(),
         db.presupuestos.toArray(),
@@ -46,7 +43,7 @@ export default function Inicio() {
       setPresupuestos(press);
       setCarteras(carts);
       setCategorias(cats);
-      setFacturacion(facts.filter(f => f.mes === mesActual && f.anio === anioActual));
+      setFacturacion(facts);
       setSeparador(sep || 'coma');
       setDolarMep(parseFloat(dolar) || 1000);
     }
@@ -63,7 +60,7 @@ export default function Inicio() {
     .filter(p => p.moneda === 'Dólares')
     .reduce((acc, p) => acc + p.importe, 0);
 
-  const movsMes = movimientos.filter(m => mismoMes(m.fecha));
+  const movsMes = movimientos.filter(m => esMismoPeriodo(m.fecha, periodo.mes, periodo.anio));
 
   const totalGastado = movsMes
     .filter(m => m.tipo === 'gasto')
@@ -73,7 +70,9 @@ export default function Inicio() {
     .filter(m => m.tipo === 'ingreso')
     .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
 
-  const totalFacturado = facturacion.reduce((acc, f) => {
+  const facturacionPeriodo = facturacion.filter(f => f.mes === periodo.mes && f.anio === periodo.anio);
+
+  const totalFacturado = facturacionPeriodo.reduce((acc, f) => {
     return acc + (f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe);
   }, 0);
 
@@ -114,7 +113,7 @@ export default function Inicio() {
         return true;
       });
     }
-    return movimientos;
+    return movimientos.filter(m => esMismoPeriodo(m.fecha, periodo.mes, periodo.anio));
   })();
 
   function getCatNombre(id) {
@@ -155,6 +154,8 @@ export default function Inicio() {
         <FitButton className="btn-main rojo" onClick={() => setModal({ tipo: 'gasto' })}>Nuevo Gasto</FitButton>
         <FitButton className="btn-main verde" onClick={() => setModal({ tipo: 'ingreso' })}>Nuevo Ingreso</FitButton>
       </div>
+
+      <PeriodSelector />
 
       <div className="resumen">
         <div className="resumen-row">

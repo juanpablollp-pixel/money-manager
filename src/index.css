@@ -505,6 +505,51 @@ body,
   background: var(--slate-100);
 }
 
+/* Selector de período */
+.period-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: 6px 8px;
+}
+
+.period-label {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--negro);
+  text-align: center;
+  flex: 1;
+}
+
+.period-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--slate-500);
+  border-radius: 8px;
+  transition: background 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.period-btn:active {
+  background: var(--slate-100);
+}
+
+.period-btn:disabled {
+  color: var(--slate-200);
+  cursor: default;
+}
+
 /* Menú overlay - drawer lateral */
 .menu-overlay {
   position: fixed;

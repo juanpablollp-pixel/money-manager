@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste } from '../db/database';
-import { formatPesos } from '../utils/format';
+import { formatPesos, nombreMes } from '../utils/format';
 import { useApp } from '../context/AppContext';
+import PeriodSelector from '../components/PeriodSelector';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormFacturacion from '../components/FormFacturacion';
@@ -9,15 +10,11 @@ import { Pencil, X } from 'lucide-react';
 import FitButton from '../components/FitButton';
 
 export default function Facturacion() {
-  const { refreshKey, triggerRefresh } = useApp();
+  const { refreshKey, triggerRefresh, periodo } = useApp();
   const [facturacion, setFacturacion] = useState([]);
   const [dolarMep, setDolarMep] = useState(1000);
   const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
-
-  const now = new Date();
-  const mesActual = now.getMonth() + 1;
-  const anioActual = now.getFullYear();
 
   useEffect(() => {
     async function load() {
@@ -26,12 +23,12 @@ export default function Facturacion() {
         getAjuste('separadorDecimal'),
         getAjuste('dolarMep'),
       ]);
-      setFacturacion(facts.filter(f => f.mes === mesActual && f.anio === anioActual));
+      setFacturacion(facts.filter(f => f.mes === periodo.mes && f.anio === periodo.anio));
       setSeparador(sep || 'coma');
       setDolarMep(parseFloat(dolar) || 1000);
     }
     load();
-  }, [refreshKey]);
+  }, [refreshKey, periodo]);
 
   async function eliminar(id) {
     if (!confirm('¿Eliminar registro de facturación?')) return;
@@ -45,7 +42,6 @@ export default function Facturacion() {
     0
   );
 
-  const meses = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
   return (
     <div className="page">
@@ -55,10 +51,12 @@ export default function Facturacion() {
         Agregar Facturación
       </FitButton>
 
+      <PeriodSelector />
+
       <div className="resumen">
         <div className="resumen-row">
           <span className="resumen-label">Mes</span>
-          <span className="resumen-valor">{meses[mesActual - 1]} {anioActual}</span>
+          <span className="resumen-valor">{nombreMes(periodo.mes)} {periodo.anio}</span>
         </div>
         <div className="resumen-divider" />
         <div className="resumen-row">
