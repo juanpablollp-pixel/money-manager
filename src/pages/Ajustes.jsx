@@ -14,21 +14,17 @@ export default function Ajustes() {
     cuentaDefault: '',
     primerDiaSemana: 'lunes',
     separadorDecimal: 'coma',
-    geminiApiKey: '',
-    geminiModel: 'gemini-2.5-flash',
   });
 
   useEffect(() => {
     async function load() {
-      const [carts, dolar, periodo, cuenta, dia, sep, gemKey, gemModel] = await Promise.all([
+      const [carts, dolar, periodo, cuenta, dia, sep] = await Promise.all([
         db.carteras.toArray(),
         getAjuste('dolarMep'),
         getAjuste('periodoDefault'),
         getAjuste('cuentaDefault'),
         getAjuste('primerDiaSemana'),
         getAjuste('separadorDecimal'),
-        getAjuste('geminiApiKey'),
-        getAjuste('geminiModel'),
       ]);
       setCarteras(carts);
       setVals({
@@ -37,8 +33,6 @@ export default function Ajustes() {
         cuentaDefault: cuenta || '',
         primerDiaSemana: dia || 'lunes',
         separadorDecimal: sep || 'coma',
-        geminiApiKey: gemKey || '',
-        geminiModel: gemModel || 'gemini-2.5-flash',
       });
     }
     load();
@@ -185,28 +179,6 @@ export default function Ajustes() {
         <select className="ajuste-select" value={vals.separadorDecimal} onChange={e => update('separadorDecimal', e.target.value)}>
           <option value="punto">Punto 0.1</option>
           <option value="coma">Coma 0,1</option>
-        </select>
-      </div>
-
-      {/* Asistente IA */}
-      <div className="ajuste-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
-        <span className="ajuste-label">Asistente IA (Gemini)</span>
-        <input
-          type="password"
-          className="ajuste-input"
-          style={{ width: '100%', boxSizing: 'border-box' }}
-          placeholder="API Key de Google Gemini"
-          value={vals.geminiApiKey}
-          onChange={e => update('geminiApiKey', e.target.value)}
-        />
-        <select
-          className="ajuste-select"
-          value={vals.geminiModel}
-          onChange={e => update('geminiModel', e.target.value)}
-        >
-          <option value="gemini-2.5-flash">gemini-2.5-flash (recomendado)</option>
-          <option value="gemini-2.5-pro">gemini-2.5-pro</option>
-          <option value="gemini-2.0-flash">gemini-2.0-flash</option>
         </select>
       </div>
     </div>

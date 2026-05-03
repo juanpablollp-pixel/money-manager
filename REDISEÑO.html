@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>MoneyManager - Rediseño Final</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .modal-up { animation: modalUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        @keyframes modalUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        /* Estilo para los botones achatados */
+        .btn-flat {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.875rem 1rem;
+            border-radius: 1.5rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+            font-size: 0.6875rem;
+            transition: transform 0.1s ease;
+        }
+        .btn-flat:active { transform: scale(0.95); }
+    </style>
+</head>
+<body class="bg-slate-200 flex justify-center items-center h-screen sm:p-4">
+
+    <!-- App Container -->
+    <div class="w-full max-w-[400px] h-full sm:max-h-[850px] bg-slate-50 relative overflow-hidden sm:rounded-[2.5rem] sm:shadow-2xl sm:border-[6px] border-slate-800 flex flex-col">
+        
+        <!-- HEADER -->
+        <header class="bg-white px-5 py-4 flex justify-between items-center z-10 shadow-sm shrink-0">
+            <div class="flex items-center gap-3">
+                <button id="btn-back" class="hidden text-slate-600" onclick="navigateTo('home')">
+                    <i data-lucide="chevron-left"></i>
+                </button>
+                <h1 id="header-title" class="text-xl font-bold text-slate-800 tracking-tight italic">MoneyManager</h1>
+            </div>
+            <button onclick="toggleMenu(true)" class="text-slate-800 p-1 hover:bg-slate-100 rounded-lg transition-colors">
+                <i data-lucide="menu" class="w-7 h-7"></i>
+            </button>
+        </header>
+
+        <!-- VISTA: INICIO -->
+        <main id="screen-home" class="flex-1 overflow-y-auto p-5 space-y-6 hide-scrollbar pb-10 fade-in">
+            <!-- Botones de Acción Achatados -->
+            <div class="grid grid-cols-2 gap-3">
+                <button class="btn-flat bg-rose-500 text-white shadow-lg shadow-rose-200" onclick="openModal('transaction', 'Nuevo Gasto')">
+                    <i data-lucide="arrow-down-circle" class="w-5 h-5"></i>
+                    Nuevo Gasto
+                </button>
+                <button class="btn-flat bg-emerald-500 text-white shadow-lg shadow-emerald-200" onclick="openModal('transaction', 'Nuevo Ingreso')">
+                    <i data-lucide="arrow-up-circle" class="w-5 h-5"></i>
+                    Nuevo Ingreso
+                </button>
+            </div>
+
+            <!-- Resumen Financiero -->
+            <div class="bg-white rounded-[2rem] p-6 shadow-sm border border-slate-100 space-y-3.5">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500 font-medium">Facturación Mensual</span>
+                    <span class="text-emerald-600 font-bold">$2.575.924,30</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500 font-medium">Presupuesto Mensual</span>
+                    <span class="font-bold text-slate-800">$1.594.467,51</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500 font-medium">Total a Dejar en Cuenta</span>
+                    <span class="font-bold text-slate-800">$1.117.181,99</span>
+                </div>
+                <div class="flex justify-between items-center text-sm pb-3 border-b border-slate-100">
+                    <span class="text-slate-500 font-medium">Total Después de Gastos</span>
+                    <span class="font-bold text-rose-500">$-186,61</span>
+                </div>
+                <div class="flex justify-between items-center pt-1 text-sm">
+                    <span class="text-slate-500 font-medium">Ingresos</span>
+                    <span class="text-emerald-600 font-bold">$2.115.786,86</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-500 font-medium">Gastos</span>
+                    <span class="text-rose-500 font-bold">$477.285,52</span>
+                </div>
+                <div class="pt-4 mt-2 border-t border-slate-100 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-slate-700">Balance de Cuenta</span>
+                        <span class="font-black text-slate-900 text-lg">$1.116.995,38</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-slate-700">Ahorros</span>
+                        <span class="font-black text-emerald-600 text-lg">$1.547.448,84</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historial -->
+            <div>
+                <div class="flex justify-between items-center mb-4 px-1">
+                    <h2 class="text-lg font-bold text-slate-800">Historial de Movimientos</h2>
+                    <button class="p-2 text-slate-500 bg-white rounded-xl shadow-sm hover:bg-slate-50">
+                        <i data-lucide="calendar" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="space-y-3" id="movements-list">
+                    <!-- Los items se renderizan vía JS -->
+                </div>
+            </div>
+        </main>
+
+        <!-- VISTA: CARTERAS -->
+        <main id="screen-carteras" class="flex-1 overflow-y-auto p-5 space-y-6 hide-scrollbar pb-10 fade-in hidden">
+            <!-- Botones Superiores Simétricos -->
+            <div class="grid grid-cols-2 gap-3 pb-2">
+                <button class="bg-slate-800 text-white text-[11px] font-bold px-2 py-3.5 rounded-xl leading-tight">
+                    Historial Transferencias
+                </button>
+                <button class="bg-slate-200 text-slate-700 text-[11px] font-bold px-2 py-3.5 rounded-xl leading-tight">
+                    Nueva Transferencia
+                </button>
+            </div>
+
+            <!-- Botones de Cartera Achatados -->
+            <div class="grid grid-cols-2 gap-3">
+                <button class="bg-rose-50 text-rose-600 border border-rose-100 py-3 rounded-2xl font-bold text-[11px] flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Cartera Gastos
+                </button>
+                <button class="bg-emerald-50 text-emerald-600 border border-emerald-100 py-3 rounded-2xl font-bold text-[11px] flex items-center justify-center gap-2">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Cartera Ahorros
+                </button>
+            </div>
+
+            <div class="space-y-3" id="wallets-list">
+                <!-- Los items se renderizan vía JS -->
+            </div>
+        </main>
+
+        <!-- MENU OVERLAY -->
+        <div id="menu-overlay" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300" onclick="toggleMenu(false)">
+            <div id="menu-drawer" class="absolute top-0 right-0 w-[80%] max-w-[300px] h-full bg-white shadow-2xl flex flex-col translate-x-full transition-transform duration-300" onclick="event.stopPropagation()">
+                <div class="p-5 flex justify-between items-center border-b border-slate-100">
+                    <h2 class="text-xl font-bold text-slate-800">Menú</h2>
+                    <button onclick="toggleMenu(false)" class="p-2 text-slate-500 hover:bg-slate-100 rounded-full">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                
+                <nav class="p-4 flex-1 overflow-y-auto flex flex-col gap-2">
+                    <button onclick="handleAskAI()" class="flex items-center gap-4 w-full p-4 rounded-2xl transition-all bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold text-lg shadow-lg mb-2 active:scale-95">
+                        <div class="bg-white/20 p-2 rounded-xl">
+                            <i data-lucide="sparkles" class="w-5 h-5"></i>
+                        </div>
+                        Análisis IA
+                    </button>
+
+                    <button onclick="navigateTo('home')" class="flex items-center gap-4 w-full p-4 rounded-2xl hover:bg-slate-50 text-slate-700 font-semibold text-lg">
+                        <div class="bg-blue-50 text-blue-500 p-2 rounded-xl"><i data-lucide="layout-dashboard" class="w-5 h-5"></i></div>
+                        Inicio
+                    </button>
+                    <button onclick="navigateTo('carteras')" class="flex items-center gap-4 w-full p-4 rounded-2xl hover:bg-slate-50 text-slate-700 font-semibold text-lg">
+                        <div class="bg-indigo-50 text-indigo-500 p-2 rounded-xl"><i data-lucide="wallet" class="w-5 h-5"></i></div>
+                        Carteras
+                    </button>
+                    <button class="flex items-center gap-4 w-full p-4 rounded-2xl hover:bg-slate-50 text-slate-700 font-semibold text-lg">
+                        <div class="bg-orange-50 text-orange-500 p-2 rounded-xl"><i data-lucide="pie-chart" class="w-5 h-5"></i></div>
+                        Presupuestos
+                    </button>
+                </nav>
+
+                <div class="p-4 border-t border-slate-100">
+                    <button class="flex items-center gap-4 w-full p-4 rounded-2xl hover:bg-slate-50 text-slate-700 font-semibold text-lg">
+                        <div class="bg-slate-100 text-slate-600 p-2 rounded-xl"><i data-lucide="settings" class="w-5 h-5"></i></div>
+                        Ajustes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL CONTAINER -->
+        <div id="modal-container" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] hidden items-end sm:items-center justify-center opacity-0 transition-opacity duration-300" onclick="closeModal()">
+            <div id="modal-content" class="bg-white w-full max-w-md rounded-t-[2.5rem] sm:rounded-[2.5rem] p-6 shadow-2xl translate-y-full transition-transform duration-300" onclick="event.stopPropagation()">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 id="modal-title" class="text-xl font-bold text-slate-800">Modal</h2>
+                    <button onclick="closeModal()" class="p-2 hover:bg-slate-100 rounded-full">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div id="modal-body">
+                    <!-- Contenido dinámico -->
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- DATOS ---
+        const movements = [
+            { id: 1, title: "Fernando Juarez", subtitle: "Expensas", icon: 'home', color: "rose", date: "13 - Abr - 2026", amount: "65.405,00", wallet: "Macro Pesos", type: 'expense' },
+            { id: 2, title: "Combustible", subtitle: "YPF", icon: 'fuel', color: "rose", date: "13 - Abr - 2026", amount: "66.003,00", wallet: "Macro Pesos", type: 'expense' },
+            { id: 3, title: "Sueldo Mensual", subtitle: "Empresa SA", icon: 'briefcase', color: "emerald", date: "01 - Abr - 2026", amount: "2.115.786,86", wallet: "Macro Pesos", type: 'income' },
+        ];
+
+        const wallets = [
+            { name: 'Macro Pesos', type: 'Caja de Ahorros', bal: "1.116.995,38", color: 'rose' },
+            { name: 'Balanz Pesos', type: 'Cuenta Broker', bal: "1.547.448,84", color: 'emerald' },
+        ];
+
+        // --- NAVEGACIÓN ---
+        function navigateTo(screen) {
+            document.querySelectorAll('main').forEach(m => m.classList.add('hidden'));
+            document.getElementById(`screen-${screen}`).classList.remove('hidden');
+            
+            const title = document.getElementById('header-title');
+            const btnBack = document.getElementById('btn-back');
+
+            if(screen === 'home') {
+                title.textContent = 'MoneyManager';
+                btnBack.classList.add('hidden');
+            } else {
+                title.textContent = screen.charAt(0).toUpperCase() + screen.slice(1);
+                btnBack.classList.remove('hidden');
+            }
+            toggleMenu(false);
+        }
+
+        // --- MENÚ ---
+        function toggleMenu(show) {
+            const overlay = document.getElementById('menu-overlay');
+            const drawer = document.getElementById('menu-drawer');
+            if(show) {
+                overlay.classList.remove('hidden');
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    drawer.classList.remove('translate-x-full');
+                }, 10);
+            } else {
+                overlay.classList.add('opacity-0');
+                drawer.classList.add('translate-x-full');
+                setTimeout(() => overlay.classList.add('hidden'), 300);
+            }
+        }
+
+        // --- MODALES ---
+        function openModal(type, title) {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            const body = document.getElementById('modal-body');
+            document.getElementById('modal-title').textContent = title;
+
+            if(type === 'transaction') {
+                body.innerHTML = `
+                    <div class="space-y-4 py-4">
+                        <input type="text" placeholder="Concepto..." class="w-full text-lg font-bold border-b-2 border-slate-100 focus:border-slate-800 outline-none pb-2 transition-all" />
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl font-black text-slate-400">$</span>
+                            <input type="number" placeholder="0,00" class="w-full text-4xl font-black border-none outline-none py-4" />
+                        </div>
+                        <button onclick="closeModal()" class="w-full py-4 rounded-2xl font-black text-white ${title.includes('Gasto') ? 'bg-rose-500' : 'bg-emerald-500'}">
+                            GUARDAR
+                        </button>
+                    </div>
+                `;
+            } else if (type === 'ai') {
+                body.innerHTML = `<div class="p-6 bg-indigo-50 rounded-[2rem] border border-indigo-100 text-indigo-900 italic text-center" id="ai-text">Analizando tus finanzas...</div>`;
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('translate-y-full');
+            }, 10);
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-container');
+            const content = document.getElementById('modal-content');
+            modal.classList.add('opacity-0');
+            content.classList.add('translate-y-full');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 300);
+        }
+
+        // --- RENDERIZADO ---
+        function renderHome() {
+            const list = document.getElementById('movements-list');
+            list.innerHTML = movements.map(m => `
+                <div class="bg-white rounded-[2rem] p-4 shadow-sm border border-slate-100 flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${m.type === 'expense' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-500'}">
+                        <i data-lucide="${m.icon}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <h3 class="font-bold text-slate-800 truncate leading-tight">${m.title}</h3>
+                        <p class="text-[11px] text-slate-500 truncate">${m.subtitle} • ${m.wallet}</p>
+                        <p class="text-[10px] text-slate-400 mt-1 font-medium">${m.date}</p>
+                    </div>
+                    <div class="text-right shrink-0 flex flex-col items-end gap-2">
+                        <span class="font-bold text-base ${m.type === 'expense' ? 'text-rose-600' : 'text-emerald-600'}">$${m.amount}</span>
+                        <div class="flex gap-1">
+                            <button class="p-1.5 text-slate-400 hover:bg-slate-50 rounded-md"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                            <button class="p-1.5 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-md"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderWallets() {
+            const list = document.getElementById('wallets-list');
+            list.innerHTML = wallets.map(w => `
+                <div class="bg-white rounded-[1.2rem] p-3 border-l-[6px] border-y border-r border-slate-100 ${w.color === 'rose' ? 'border-l-rose-400' : 'border-l-emerald-400'}">
+                    <div class="flex justify-between items-center">
+                        <div class="flex-1 min-w-0">
+                            <h3 class="font-bold text-slate-800 text-base leading-none truncate">${w.name}</h3>
+                            <p class="text-[10px] text-slate-400 mt-1 font-bold uppercase tracking-tight truncate">${w.type}</p>
+                        </div>
+                        <div class="text-right ml-4">
+                            <span class="font-black text-lg ${w.color === 'emerald' ? 'text-emerald-600' : 'text-slate-900'}">$${w.bal}</span>
+                            <div class="flex gap-1 justify-end mt-2">
+                                <button class="p-1 bg-slate-50 rounded-lg text-slate-400"><i data-lucide="eye" class="w-3.5 h-3.5"></i></button>
+                                <button class="p-1 bg-slate-50 rounded-lg text-slate-400"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button>
+                                <button class="p-1 bg-rose-50/50 text-rose-300 rounded-lg"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // --- IA SIMULATION ---
+        async function handleAskAI() {
+            openModal('ai', 'Insights Inteligentes ✨');
+            const apiKey = ""; // La API key se maneja en el entorno
+            const prompt = "Analiza mis finanzas brevemente y dame un consejo de ahorro en español.";
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                document.getElementById('ai-text').textContent = text;
+            } catch (e) {
+                document.getElementById('ai-text').textContent = "Parece que no puedo conectarme ahora. ¡Intenta en un momento!";
+            }
+        }
+
+        // Inicializar
+        renderHome();
+        renderWallets();
+        lucide.createIcons();
+    </script>
+</body>
+</html>
