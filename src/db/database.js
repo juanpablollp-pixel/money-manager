@@ -23,8 +23,6 @@ db.on('populate', async () => {
     { clave: 'cuentaDefault', valor: '' },
     { clave: 'primerDiaSemana', valor: 'lunes' },
     { clave: 'separadorDecimal', valor: 'coma' },
-    { clave: 'geminiApiKey', valor: '' },
-    { clave: 'geminiModel', valor: 'gemini-2.5-flash' },
   ]);
 });
 

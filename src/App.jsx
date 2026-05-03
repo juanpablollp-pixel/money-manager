@@ -7,7 +7,6 @@ import Presupuestos from './pages/Presupuestos';
 import Facturacion from './pages/Facturacion';
 import Categorias from './pages/Categorias';
 import Ajustes from './pages/Ajustes';
-import Asistente from './pages/Asistente';
 import './index.css';
 
 export default function App() {
@@ -22,7 +21,6 @@ export default function App() {
           <Route path="/facturacion" element={<Facturacion />} />
           <Route path="/categorias" element={<Categorias />} />
           <Route path="/ajustes" element={<Ajustes />} />
-          <Route path="/asistente" element={<Asistente />} />
         </Routes>
       </AppProvider>
     </HashRouter>

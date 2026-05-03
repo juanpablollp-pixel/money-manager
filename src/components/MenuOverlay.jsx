@@ -1,6 +1,6 @@
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { X, LayoutDashboard, Wallet, PieChart, FileText, Tag, Settings, Sparkles } from 'lucide-react';
+import { X, LayoutDashboard, Wallet, PieChart, FileText, Tag, Settings } from 'lucide-react';
 
 const items = [
   { label: 'Inicio', to: '/', icon: LayoutDashboard, iconBg: '#eff6ff', iconColor: '#3b82f6' },
@@ -36,13 +36,7 @@ export default function MenuOverlay() {
         </div>
 
         <nav className="menu-nav">
-          <button className="menu-item-ai" onClick={() => go('/asistente')}>
-            <div className="menu-item-icon" style={{ background: 'rgba(99,102,241,0.15)', color: '#6366f1' }}>
-              <Sparkles size={18} />
-            </div>
-            Asistente IA
-          </button>
-          {items.map(({ label, to, icon: Icon, iconBg, iconColor }) => (
+{items.map(({ label, to, icon: Icon, iconBg, iconColor }) => (
             <button key={to} className="menu-item" onClick={() => go(to)}>
               <div className="menu-item-icon" style={{ background: iconBg, color: iconColor }}>
                 <Icon size={18} />
