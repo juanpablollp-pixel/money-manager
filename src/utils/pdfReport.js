@@ -32,10 +32,10 @@ export async function exportarReportePDF(periodo) {
 
   const totalIngresado = movsPeriodo
     .filter(m => m.tipo === 'ingreso')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
   const totalGastado = movsPeriodo
     .filter(m => m.tipo === 'gasto')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
 
   const HEADER_COLOR = [30, 41, 59];
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -136,7 +136,7 @@ export async function exportarReportePDF(periodo) {
     const gastadoPorCat = movsPeriodo
       .filter(m => m.tipo === 'gasto')
       .reduce((acc, m) => {
-        const ars = m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe;
+        const ars = m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe;
         acc[m.categoriaId] = (acc[m.categoriaId] || 0) + ars;
         return acc;
       }, {});

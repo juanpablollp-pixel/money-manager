@@ -69,11 +69,11 @@ export default function Inicio() {
 
   const totalGastado = movsMes
     .filter(m => m.tipo === 'gasto')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
 
   const totalIngresado = movsMes
     .filter(m => m.tipo === 'ingreso')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
 
   const facturacionPeriodo = facturacion.filter(f => f.mes === periodo.mes && f.anio === periodo.anio);
 
@@ -88,10 +88,10 @@ export default function Inicio() {
     return `${periodo.anio}-${String(periodo.mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
   })();
 
-  function toNativaCartera(imp, monedaMov, cartera) {
+  function toNativaCartera(imp, monedaMov, cartera, tasa) {
     if (!cartera || monedaMov === cartera.moneda) return imp;
-    if (monedaMov === 'Dólares' && cartera.moneda === 'Pesos') return imp * dolarMep;
-    if (monedaMov === 'Pesos' && cartera.moneda === 'Dólares') return imp / dolarMep;
+    if (monedaMov === 'Dólares' && cartera.moneda === 'Pesos') return imp * tasa;
+    if (monedaMov === 'Pesos' && cartera.moneda === 'Dólares') return imp / tasa;
     return imp;
   }
 
@@ -100,16 +100,16 @@ export default function Inicio() {
     for (const m of movimientos) {
       if (m.fecha <= finPeriodo) continue;
       if (m.carteraId !== cartera.id) continue;
-      const nat = toNativaCartera(m.importe, m.moneda, cartera);
+      const nat = toNativaCartera(m.importe, m.moneda, cartera, m.dolarUsado ?? dolarMep);
       saldo += m.tipo === 'ingreso' ? -nat : nat;
     }
     for (const t of transferencias) {
       if (t.fecha <= finPeriodo) continue;
       if (t.cuentaOrigen === cartera.id) {
-        saldo += toNativaCartera(t.importe, t.moneda, cartera);
+        saldo += toNativaCartera(t.importe, t.moneda, cartera, dolarMep);
       }
       if (t.cuentaDestino === cartera.id) {
-        saldo -= toNativaCartera(t.importe, t.moneda, cartera);
+        saldo -= toNativaCartera(t.importe, t.moneda, cartera, dolarMep);
       }
     }
     return saldo;
@@ -128,7 +128,7 @@ export default function Inicio() {
     .reduce((acc, p) => {
       const gastadoEnCategoria = movsMes
         .filter(m => m.tipo === 'gasto' && m.categoriaId === p.categoriaId)
-        .reduce((sum, m) => sum + (m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe), 0);
+        .reduce((sum, m) => sum + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
       return acc + Math.min(gastadoEnCategoria, p.importe);
     }, 0);
 
@@ -176,8 +176,9 @@ export default function Inicio() {
       const cartera = carteras.find(c => c.id === mov.carteraId);
       let importeNativo = mov.importe;
       if (cartera && mov.moneda !== cartera.moneda) {
-        if (mov.moneda === 'Dólares' && cartera.moneda === 'Pesos') importeNativo = mov.importe * dolarMep;
-        if (mov.moneda === 'Pesos' && cartera.moneda === 'Dólares') importeNativo = mov.importe / dolarMep;
+        const tasa = mov.dolarUsado ?? dolarMep;
+        if (mov.moneda === 'Dólares' && cartera.moneda === 'Pesos') importeNativo = mov.importe * tasa;
+        if (mov.moneda === 'Pesos' && cartera.moneda === 'Dólares') importeNativo = mov.importe / tasa;
       }
       const delta = mov.tipo === 'ingreso' ? -importeNativo : importeNativo;
       await db.carteras.where('id').equals(mov.carteraId).modify(c => { c.importe += delta; });

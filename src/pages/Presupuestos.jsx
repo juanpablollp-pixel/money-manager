@@ -86,7 +86,7 @@ export default function Presupuestos() {
 
   // Gastos del mes agrupados por categoría (en ARS)
   const gastadoPorCategoria = movimientos.reduce((acc, m) => {
-    const enARS = m.moneda === 'Dólares' ? m.importe * dolarMep : m.importe;
+    const enARS = m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe;
     acc[m.categoriaId] = (acc[m.categoriaId] || 0) + enARS;
     return acc;
   }, {});

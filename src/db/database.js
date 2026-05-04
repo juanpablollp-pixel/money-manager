@@ -27,6 +27,18 @@ db.version(3).stores({
   });
 });
 
+db.version(4).stores({
+  movimientos: '++id, tipo, fecha, empresa, categoriaId, carteraId, importe, moneda, createdAt, dolarUsado',
+}).upgrade(async tx => {
+  const ajuste = await tx.table('ajustes').where('clave').equals('dolarMep').first();
+  const dolarActual = parseFloat(ajuste?.valor) || 1000;
+  await tx.table('movimientos').toCollection().modify(m => {
+    if (m.moneda === 'Dólares' && m.dolarUsado == null) {
+      m.dolarUsado = dolarActual;
+    }
+  });
+});
+
 // Seed ajustes por defecto
 db.on('populate', async () => {
   await db.ajustes.bulkAdd([

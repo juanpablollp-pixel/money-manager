@@ -29,11 +29,11 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
     load();
   }, []);
 
-  function toCarteraNativa(importe, movMoneda, cartera) {
+  function toCarteraNativa(importe, movMoneda, cartera, tasa) {
     if (!cartera) return importe;
     if (movMoneda === cartera.moneda) return importe;
-    if (movMoneda === 'Dólares' && cartera.moneda === 'Pesos') return importe * dolarMep;
-    if (movMoneda === 'Pesos' && cartera.moneda === 'Dólares') return importe / dolarMep;
+    if (movMoneda === 'Dólares' && cartera.moneda === 'Pesos') return importe * tasa;
+    if (movMoneda === 'Pesos' && cartera.moneda === 'Dólares') return importe / tasa;
     return importe;
   }
 
@@ -41,20 +41,27 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
     if (!empresa || !importe) return;
     const nuevoImporte = parseFloat(String(importe).replace(',', '.'));
     const nuevaCarteraId = Number(carteraId);
+    // Al editar mantenemos el dolarUsado original; al crear lo congelamos al actual.
+    const dolarUsadoNuevo = moneda === 'Dólares'
+      ? (initial?.dolarUsado ?? dolarMep)
+      : undefined;
     const data = { tipo, fecha, empresa, categoriaId: categoriaId ? Number(categoriaId) : null, carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
+    if (dolarUsadoNuevo != null) data.dolarUsado = dolarUsadoNuevo;
 
     if (initial?.id) {
-      // Revertir efecto del movimiento original sobre su cartera
+      // Revertir efecto del movimiento original sobre su cartera (usa la tasa con que se aplicó originalmente)
       if (initial.carteraId) {
         const carteraOrigen = carteras.find(c => c.id === initial.carteraId);
-        const importeNativoOld = toCarteraNativa(initial.importe, initial.moneda, carteraOrigen);
+        const tasaOld = initial.dolarUsado ?? dolarMep;
+        const importeNativoOld = toCarteraNativa(initial.importe, initial.moneda, carteraOrigen, tasaOld);
         const oldDelta = initial.tipo === 'ingreso' ? -importeNativoOld : importeNativoOld;
         await db.carteras.where('id').equals(initial.carteraId).modify(c => { c.importe += oldDelta; });
       }
       // Aplicar efecto del movimiento nuevo sobre su cartera
       if (nuevaCarteraId) {
         const carteraDestino = carteras.find(c => c.id === nuevaCarteraId);
-        const importeNativoNew = toCarteraNativa(nuevoImporte, moneda, carteraDestino);
+        const tasaNew = dolarUsadoNuevo ?? dolarMep;
+        const importeNativoNew = toCarteraNativa(nuevoImporte, moneda, carteraDestino, tasaNew);
         const newDelta = tipo === 'ingreso' ? importeNativoNew : -importeNativoNew;
         await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += newDelta; });
       }
@@ -63,7 +70,8 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
       await db.movimientos.add(data);
       if (nuevaCarteraId) {
         const carteraDestino = carteras.find(c => c.id === nuevaCarteraId);
-        const importeNativo = toCarteraNativa(nuevoImporte, moneda, carteraDestino);
+        const tasa = dolarUsadoNuevo ?? dolarMep;
+        const importeNativo = toCarteraNativa(nuevoImporte, moneda, carteraDestino, tasa);
         const delta = tipo === 'ingreso' ? importeNativo : -importeNativo;
         await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += delta; });
       }
