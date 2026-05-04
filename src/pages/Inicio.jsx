@@ -16,6 +16,7 @@ export default function Inicio() {
   const [carteras, setCarteras] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [facturacion, setFacturacion] = useState([]);
+  const [transferencias, setTransferencias] = useState([]);
   const [dolarMep, setDolarMep] = useState(1000);
   const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
@@ -26,12 +27,13 @@ export default function Inicio() {
 
   useEffect(() => {
     async function load() {
-      const [movs, press, carts, cats, facts, sep, dolar] = await Promise.all([
+      const [movs, press, carts, cats, facts, trans, sep, dolar] = await Promise.all([
         db.movimientos.toArray(),
         db.presupuestos.toArray(),
         db.carteras.toArray(),
         db.categorias.toArray(),
         db.facturacion.toArray(),
+        db.transferencias.toArray(),
         getAjuste('separadorDecimal'),
         getAjuste('dolarMep'),
       ]);
@@ -44,6 +46,7 @@ export default function Inicio() {
       setCarteras(carts);
       setCategorias(cats);
       setFacturacion(facts);
+      setTransferencias(trans);
       setSeparador(sep || 'coma');
       setDolarMep(parseFloat(dolar) || 1000);
     }
@@ -78,9 +81,46 @@ export default function Inicio() {
     return acc + (f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe);
   }, 0);
 
+  // Reconstruye el saldo nativo de cada cartera al final del período seleccionado.
+  // Resta el efecto de movimientos y transferencias con fecha posterior al último día del mes.
+  const finPeriodo = (() => {
+    const ultimoDia = new Date(periodo.anio, periodo.mes, 0).getDate();
+    return `${periodo.anio}-${String(periodo.mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
+  })();
+
+  function toNativaCartera(imp, monedaMov, cartera) {
+    if (!cartera || monedaMov === cartera.moneda) return imp;
+    if (monedaMov === 'Dólares' && cartera.moneda === 'Pesos') return imp * dolarMep;
+    if (monedaMov === 'Pesos' && cartera.moneda === 'Dólares') return imp / dolarMep;
+    return imp;
+  }
+
+  function saldoCarteraAlPeriodo(cartera) {
+    let saldo = cartera.importe;
+    for (const m of movimientos) {
+      if (m.fecha <= finPeriodo) continue;
+      if (m.carteraId !== cartera.id) continue;
+      const nat = toNativaCartera(m.importe, m.moneda, cartera);
+      saldo += m.tipo === 'ingreso' ? -nat : nat;
+    }
+    for (const t of transferencias) {
+      if (t.fecha <= finPeriodo) continue;
+      if (t.cuentaOrigen === cartera.id) {
+        saldo += toNativaCartera(t.importe, t.moneda, cartera);
+      }
+      if (t.cuentaDestino === cartera.id) {
+        saldo -= toNativaCartera(t.importe, t.moneda, cartera);
+      }
+    }
+    return saldo;
+  }
+
   const balanceCuenta = carteras
     .filter(c => c.enBalance)
-    .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
+    .reduce((acc, c) => {
+      const saldoNat = saldoCarteraAlPeriodo(c);
+      return acc + (c.moneda === 'Dólares' ? saldoNat * dolarMep : saldoNat);
+    }, 0);
 
   // Por categoría: contar hasta el límite del presupuesto (el exceso no reduce la obligación restante)
   const gastadoEnPresupuestados = presupuestosPeriodo
@@ -105,7 +145,10 @@ export default function Inicio() {
 
   const ahorros = carteras
     .filter(c => c.tipo === 'ahorros')
-    .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
+    .reduce((acc, c) => {
+      const saldoNat = saldoCarteraAlPeriodo(c);
+      return acc + (c.moneda === 'Dólares' ? saldoNat * dolarMep : saldoNat);
+    }, 0);
 
   const movsFiltrados = (() => {
     if (fechaDesde || fechaHasta) {
