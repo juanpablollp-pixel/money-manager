@@ -27,7 +27,7 @@ export default function Presupuestos() {
         getAjuste('dolarMep'),
         getAjuste('separadorDecimal'),
       ]);
-      setPresupuestos(press);
+      setPresupuestos(press.filter(p => p.mes === periodo.mes && p.anio === periodo.anio));
       setCategorias(cats);
       setMovimientos(movs.filter(m => m.tipo === 'gasto' && esMismoPeriodo(m.fecha, periodo.mes, periodo.anio)));
       setDolarMep(parseFloat(dolar) || 1000);
@@ -39,6 +39,24 @@ export default function Presupuestos() {
   async function eliminar(id) {
     if (!confirm('¿Eliminar?')) return;
     await db.presupuestos.delete(id);
+    triggerRefresh();
+  }
+
+  async function copiarMesAnterior() {
+    let mesAnt = periodo.mes - 1;
+    let anioAnt = periodo.anio;
+    if (mesAnt === 0) { mesAnt = 12; anioAnt -= 1; }
+    const previos = await db.presupuestos.where({ mes: mesAnt, anio: anioAnt }).toArray();
+    if (previos.length === 0) {
+      alert('No hay presupuestos en el mes anterior para copiar.');
+      return;
+    }
+    if (!confirm(`Copiar ${previos.length} presupuesto(s) del mes anterior?`)) return;
+    await db.presupuestos.bulkAdd(previos.map(({ id, ...rest }) => ({
+      ...rest,
+      mes: periodo.mes,
+      anio: periodo.anio,
+    })));
     triggerRefresh();
   }
 
@@ -75,6 +93,12 @@ export default function Presupuestos() {
       <FitButton className="btn-main negro full" onClick={() => setModal({})}>
         Agregar Nuevo Gasto al Presupuesto
       </FitButton>
+
+      {presupuestos.length === 0 && (
+        <FitButton className="btn-main gris-claro full" onClick={copiarMesAnterior}>
+          Copiar presupuestos del mes anterior
+        </FitButton>
+      )}
 
       <PeriodSelector />
 

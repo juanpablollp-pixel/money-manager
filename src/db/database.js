@@ -15,6 +15,18 @@ db.version(2).stores({
   facturacion: '++id, empresa, importe, moneda, mes, anio',
 });
 
+db.version(3).stores({
+  presupuestos: '++id, empresa, categoriaId, importe, moneda, mes, anio',
+}).upgrade(async tx => {
+  const now = new Date();
+  const mes = now.getMonth() + 1;
+  const anio = now.getFullYear();
+  await tx.table('presupuestos').toCollection().modify(p => {
+    if (p.mes == null) p.mes = mes;
+    if (p.anio == null) p.anio = anio;
+  });
+});
+
 // Seed ajustes por defecto
 db.on('populate', async () => {
   await db.ajustes.bulkAdd([

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { db } from '../db/database';
+import { useApp } from '../context/AppContext';
 
 export default function FormPresupuesto({ initial = null, onSave, onClose }) {
+  const { periodo } = useApp();
   const [empresa, setEmpresa] = useState(initial?.empresa || '');
   const [categoriaId, setCategoriaId] = useState(initial?.categoriaId || '');
   const [importe, setImporte] = useState(initial?.importe || '');
@@ -13,8 +15,11 @@ export default function FormPresupuesto({ initial = null, onSave, onClose }) {
   async function handleSave() {
     if (!empresa || !importe) return;
     const data = { empresa, categoriaId: Number(categoriaId), importe: parseFloat(String(importe).replace(',', '.')), moneda };
-    if (initial?.id) await db.presupuestos.update(initial.id, data);
-    else await db.presupuestos.add(data);
+    if (initial?.id) {
+      await db.presupuestos.update(initial.id, data);
+    } else {
+      await db.presupuestos.add({ ...data, mes: periodo.mes, anio: periodo.anio });
+    }
     onSave?.(); onClose?.();
   }
 
