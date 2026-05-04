@@ -39,6 +39,20 @@ db.version(4).stores({
   });
 });
 
+db.version(5).stores({
+  presupuestos: '++id, empresa, categoriaId, importe, moneda, mes, anio, dolarUsado',
+  facturacion: '++id, empresa, importe, moneda, mes, anio, dolarUsado',
+}).upgrade(async tx => {
+  const ajuste = await tx.table('ajustes').where('clave').equals('dolarMep').first();
+  const dolarActual = parseFloat(ajuste?.valor) || 1000;
+  await tx.table('presupuestos').toCollection().modify(p => {
+    if (p.moneda === 'Dólares' && p.dolarUsado == null) p.dolarUsado = dolarActual;
+  });
+  await tx.table('facturacion').toCollection().modify(f => {
+    if (f.moneda === 'Dólares' && f.dolarUsado == null) f.dolarUsado = dolarActual;
+  });
+});
+
 // Seed ajustes por defecto
 db.on('populate', async () => {
   await db.ajustes.bulkAdd([

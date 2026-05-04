@@ -145,7 +145,7 @@ export async function exportarReportePDF(periodo) {
       startY: y + 2,
       head: [['Categoría', 'Presupuesto', 'Gastado', 'Resta', '%']],
       body: press.map(p => {
-        const presupARS = p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe;
+        const presupARS = p.moneda === 'Dólares' ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe;
         const gastado = gastadoPorCat[p.categoriaId] || 0;
         const resta = presupARS - gastado;
         const pct = presupARS > 0 ? Math.round((gastado / presupARS) * 100) : 0;
@@ -167,7 +167,7 @@ export async function exportarReportePDF(periodo) {
     doc.setTextColor(30, 41, 59);
     doc.text('Facturación del Período', 14, y);
 
-    const totalFactARS = factsPeriodo.reduce((acc, f) => acc + (f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe), 0);
+    const totalFactARS = factsPeriodo.reduce((acc, f) => acc + (f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe), 0);
 
     autoTable(doc, {
       startY: y + 2,
@@ -177,7 +177,7 @@ export async function exportarReportePDF(periodo) {
           f.empresa || '—',
           f.moneda,
           f.moneda === 'Dólares' ? `$${f.importe} USD` : fmt(f.importe),
-          fmt(f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe),
+          fmt(f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe),
         ]),
         [{ content: 'TOTAL', colSpan: 3, styles: { fontStyle: 'bold', halign: 'right' } }, { content: fmt(totalFactARS), styles: { fontStyle: 'bold', halign: 'right' } }],
       ],

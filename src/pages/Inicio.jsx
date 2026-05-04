@@ -65,6 +65,10 @@ export default function Inicio() {
     .filter(p => p.moneda === 'Dólares')
     .reduce((acc, p) => acc + p.importe, 0);
 
+  const presupuestoTotalUSDenARS = presupuestosPeriodo
+    .filter(p => p.moneda === 'Dólares')
+    .reduce((acc, p) => acc + p.importe * (p.dolarUsado ?? dolarMep), 0);
+
   const movsMes = movimientos.filter(m => esMismoPeriodo(m.fecha, periodo.mes, periodo.anio));
 
   const totalGastado = movsMes
@@ -78,7 +82,7 @@ export default function Inicio() {
   const facturacionPeriodo = facturacion.filter(f => f.mes === periodo.mes && f.anio === periodo.anio);
 
   const totalFacturado = facturacionPeriodo.reduce((acc, f) => {
-    return acc + (f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe);
+    return acc + (f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe);
   }, 0);
 
   // Reconstruye el saldo nativo de cada cartera al final del período seleccionado.
@@ -210,7 +214,7 @@ export default function Inicio() {
         </div>
         <div className="resumen-row">
           <span className="resumen-label">Presupuesto Mensual</span>
-          <span className="resumen-valor">{fmt(presupuestoTotalPesos + presupuestoTotalUSD * dolarMep)}</span>
+          <span className="resumen-valor">{fmt(presupuestoTotalPesos + presupuestoTotalUSDenARS)}</span>
         </div>
         {pendienteUSD > 0 && (
           <div className="resumen-row">

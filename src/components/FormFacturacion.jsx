@@ -1,13 +1,18 @@
-import { useState } from 'react';
-import { db } from '../db/database';
+import { useState, useEffect } from 'react';
+import { db, getAjuste } from '../db/database';
 
 export default function FormFacturacion({ initial = null, onSave, onClose }) {
   const now = new Date();
   const [empresa, setEmpresa] = useState(initial?.empresa || '');
   const [importe, setImporte] = useState(initial?.importe?.toString() || '');
   const [moneda, setMoneda] = useState(initial?.moneda || 'Pesos');
+  const [dolarMep, setDolarMep] = useState(1000);
   const mes = initial?.mes || now.getMonth() + 1;
   const anio = initial?.anio || now.getFullYear();
+
+  useEffect(() => {
+    getAjuste('dolarMep').then(d => setDolarMep(parseFloat(d) || 1000));
+  }, []);
 
   function handleImporte(e) {
     setImporte(e.target.value.replace(/[^0-9.,]/g, ''));
@@ -16,6 +21,9 @@ export default function FormFacturacion({ initial = null, onSave, onClose }) {
   async function handleSave() {
     if (!importe) return;
     const data = { empresa, importe: parseFloat(String(importe).replace(',', '.')) || 0, moneda, mes, anio };
+    if (moneda === 'Dólares') {
+      data.dolarUsado = initial?.dolarUsado ?? dolarMep;
+    }
     if (initial?.id) await db.facturacion.update(initial.id, data);
     else await db.facturacion.add(data);
     onSave?.();

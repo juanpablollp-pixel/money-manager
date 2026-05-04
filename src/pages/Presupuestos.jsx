@@ -104,7 +104,7 @@ export default function Presupuestos() {
   const dolares = presupuestos.filter(p => p.moneda === 'Dólares');
 
   const totalPresupuesto = presupuestos.reduce((acc, p) => {
-    return acc + (p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe);
+    return acc + (p.moneda === 'Dólares' ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe);
   }, 0);
 
   return (
@@ -138,13 +138,13 @@ export default function Presupuestos() {
           <>
             <div className="resumen-divider" />
             {[...presupuestos].sort((a, b) => {
-              const arsA = a.moneda === 'Dólares' ? a.importe * dolarMep : a.importe;
-              const arsB = b.moneda === 'Dólares' ? b.importe * dolarMep : b.importe;
+              const arsA = a.moneda === 'Dólares' ? a.importe * (a.dolarUsado ?? dolarMep) : a.importe;
+              const arsB = b.moneda === 'Dólares' ? b.importe * (b.dolarUsado ?? dolarMep) : b.importe;
               const pctA = arsA > 0 ? (gastadoPorCategoria[a.categoriaId] || 0) / arsA : 0;
               const pctB = arsB > 0 ? (gastadoPorCategoria[b.categoriaId] || 0) / arsB : 0;
               return pctA - pctB;
             }).map(p => {
-              const presupARS = p.moneda === 'Dólares' ? p.importe * dolarMep : p.importe;
+              const presupARS = p.moneda === 'Dólares' ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe;
               const gastado = gastadoPorCategoria[p.categoriaId] || 0;
               const pct = presupARS > 0 ? Math.min(100, (gastado / presupARS) * 100) : 0;
               const color = barColor(pct);
@@ -225,7 +225,7 @@ export default function Presupuestos() {
             <div className="presupuesto-body">
               <span className="card-title">{p.empresa}</span>
               <span className="card-subtitle">{getCat(p.categoriaId)}</span>
-              <span className="card-date">Dólares → {fmt(p.importe * dolarMep)}</span>
+              <span className="card-date">Dólares → {fmt(p.importe * (p.dolarUsado ?? dolarMep))}</span>
             </div>
             <div className="card-right">
               <span className="card-importe">${p.importe}</span>

@@ -38,7 +38,7 @@ export default function Facturacion() {
 
   const fmt = v => formatPesos(v, separador);
   const total = facturacion.reduce(
-    (acc, f) => acc + (f.moneda === 'Dólares' ? f.importe * dolarMep : f.importe),
+    (acc, f) => acc + (f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe),
     0
   );
 
@@ -77,7 +77,7 @@ export default function Facturacion() {
             <div className="presupuesto-body">
               <span className="card-title">{f.empresa || '—'}</span>
               <span className="card-date">
-                {f.moneda === 'Dólares' ? `Dólares → ${fmt(f.importe * dolarMep)}` : 'Pesos'}
+                {f.moneda === 'Dólares' ? `Dólares → ${fmt(f.importe * (f.dolarUsado ?? dolarMep))}` : 'Pesos'}
               </span>
             </div>
             <div className="card-right">

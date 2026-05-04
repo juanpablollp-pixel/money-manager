@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../db/database';
+import { db, getAjuste } from '../db/database';
 import { useApp } from '../context/AppContext';
 
 export default function FormPresupuesto({ initial = null, onSave, onClose }) {
@@ -9,12 +9,19 @@ export default function FormPresupuesto({ initial = null, onSave, onClose }) {
   const [importe, setImporte] = useState(initial?.importe || '');
   const [moneda, setMoneda] = useState(initial?.moneda || 'Pesos');
   const [categorias, setCategorias] = useState([]);
+  const [dolarMep, setDolarMep] = useState(1000);
 
-  useEffect(() => { db.categorias.toArray().then(setCategorias); }, []);
+  useEffect(() => {
+    db.categorias.toArray().then(setCategorias);
+    getAjuste('dolarMep').then(d => setDolarMep(parseFloat(d) || 1000));
+  }, []);
 
   async function handleSave() {
     if (!empresa || !importe) return;
     const data = { empresa, categoriaId: Number(categoriaId), importe: parseFloat(String(importe).replace(',', '.')), moneda };
+    if (moneda === 'Dólares') {
+      data.dolarUsado = initial?.dolarUsado ?? dolarMep;
+    }
     if (initial?.id) {
       await db.presupuestos.update(initial.id, data);
     } else {
