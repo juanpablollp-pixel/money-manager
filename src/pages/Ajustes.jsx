@@ -86,7 +86,25 @@ export default function Ajustes() {
       ]);
       if (data.movimientos?.length) await db.movimientos.bulkAdd(data.movimientos);
       if (data.carteras?.length) await db.carteras.bulkAdd(data.carteras);
-      if (data.presupuestos?.length) await db.presupuestos.bulkAdd(data.presupuestos);
+      if (data.presupuestos?.length) {
+        let mesDefault, anioDefault;
+        const movFechas = (data.movimientos || []).map(m => m.fecha).filter(Boolean).sort();
+        const fechaRef = movFechas[movFechas.length - 1];
+        if (fechaRef) {
+          const [y, m] = fechaRef.split('-').map(Number);
+          anioDefault = y; mesDefault = m;
+        } else {
+          const now = new Date();
+          mesDefault = now.getMonth() + 1;
+          anioDefault = now.getFullYear();
+        }
+        const presupuestosNorm = data.presupuestos.map(p => ({
+          ...p,
+          mes: p.mes ?? mesDefault,
+          anio: p.anio ?? anioDefault,
+        }));
+        await db.presupuestos.bulkAdd(presupuestosNorm);
+      }
       if (data.categorias?.length) await db.categorias.bulkAdd(data.categorias);
       if (data.transferencias?.length) await db.transferencias.bulkAdd(data.transferencias);
       if (data.facturacion?.length) await db.facturacion.bulkAdd(data.facturacion);
