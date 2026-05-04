@@ -52,11 +52,13 @@ export default function Inicio() {
 
   const fmt = v => formatPesos(v, separador);
 
-  const presupuestoTotalPesos = presupuestos
+  const presupuestosPeriodo = presupuestos.filter(p => p.mes === periodo.mes && p.anio === periodo.anio);
+
+  const presupuestoTotalPesos = presupuestosPeriodo
     .filter(p => p.moneda === 'Pesos')
     .reduce((acc, p) => acc + p.importe, 0);
 
-  const presupuestoTotalUSD = presupuestos
+  const presupuestoTotalUSD = presupuestosPeriodo
     .filter(p => p.moneda === 'Dólares')
     .reduce((acc, p) => acc + p.importe, 0);
 
@@ -81,7 +83,7 @@ export default function Inicio() {
     .reduce((acc, c) => acc + (c.moneda === 'Dólares' ? c.importe * dolarMep : c.importe), 0);
 
   // Por categoría: contar hasta el límite del presupuesto (el exceso no reduce la obligación restante)
-  const gastadoEnPresupuestados = presupuestos
+  const gastadoEnPresupuestados = presupuestosPeriodo
     .filter(p => p.moneda === 'Pesos')
     .reduce((acc, p) => {
       const gastadoEnCategoria = movsMes
@@ -92,7 +94,7 @@ export default function Inicio() {
 
   const gastadoUSD = movsMes
     .filter(m => m.tipo === 'gasto' && m.moneda === 'Dólares')
-    .filter(m => presupuestos.some(p => p.categoriaId === m.categoriaId && p.moneda === 'Dólares'))
+    .filter(m => presupuestosPeriodo.some(p => p.categoriaId === m.categoriaId && p.moneda === 'Dólares'))
     .reduce((acc, m) => acc + m.importe, 0);
 
   // Solo display — no afecta ningún cálculo del sistema
