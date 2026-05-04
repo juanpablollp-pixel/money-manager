@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste } from '../db/database';
+import { db, getAjuste, registrarCambio } from '../db/database';
 import { formatPesos, esMismoPeriodo } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import PeriodSelector from '../components/PeriodSelector';
@@ -43,6 +43,7 @@ export default function Presupuestos() {
   async function eliminar(id) {
     if (!confirm('¿Eliminar?')) return;
     await db.presupuestos.delete(id);
+    await registrarCambio();
     triggerRefresh();
   }
 
@@ -61,6 +62,7 @@ export default function Presupuestos() {
       mes: periodo.mes,
       anio: periodo.anio,
     })));
+    await registrarCambio();
     triggerRefresh();
   }
 
@@ -78,6 +80,7 @@ export default function Presupuestos() {
       mes: mesAnt,
       anio: anioAnt,
     })));
+    await registrarCambio();
     triggerRefresh();
   }
 

@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
+import { estadoBackup } from '../db/database';
 
 const AppContext = createContext();
 
@@ -6,7 +7,12 @@ export function AppProvider({ children }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuClosing, setMenuClosing] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [avisoBackup, setAvisoBackup] = useState({ mostrar: false, cambios: 0, diasSinBackup: null, ultimoBackup: null });
   const closeTimerRef = useRef(null);
+
+  useEffect(() => {
+    estadoBackup().then(setAvisoBackup);
+  }, [refreshKey]);
 
   const now = new Date();
   const [periodo, setPeriodo] = useState({ mes: now.getMonth() + 1, anio: now.getFullYear() });
@@ -40,7 +46,7 @@ export function AppProvider({ children }) {
   const esPeriodoActual = periodo.mes === n2.getMonth() + 1 && periodo.anio === n2.getFullYear();
 
   return (
-    <AppContext.Provider value={{ menuOpen, setMenuOpen, menuClosing, closeMenu, refreshKey, triggerRefresh, periodo, periodoAnterior, periodoSiguiente, esPeriodoActual }}>
+    <AppContext.Provider value={{ menuOpen, setMenuOpen, menuClosing, closeMenu, refreshKey, triggerRefresh, periodo, periodoAnterior, periodoSiguiente, esPeriodoActual, avisoBackup }}>
       {children}
     </AppContext.Provider>
   );

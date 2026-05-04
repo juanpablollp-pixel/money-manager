@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste } from '../db/database';
+import { db, getAjuste, registrarCambio } from '../db/database';
 import { hoy } from '../utils/format';
 
 export default function FormTransferencia({ initial = null, onSave, onClose }) {
@@ -63,6 +63,7 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
       await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += importeDestino; });
     }
 
+    await registrarCambio();
     onSave?.(); onClose?.();
   }
 

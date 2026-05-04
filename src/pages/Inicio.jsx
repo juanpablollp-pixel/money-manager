@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste, reevaluarPresupuestoUSD } from '../db/database';
+import { db, getAjuste, reevaluarPresupuestoUSD, registrarCambio } from '../db/database';
 import { formatPesos, formatFecha, esMismoPeriodo, tasaDelPeriodo } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import PeriodSelector from '../components/PeriodSelector';
@@ -8,6 +8,7 @@ import Modal from '../components/Modal';
 import FormMovimiento from '../components/FormMovimiento';
 import { Pencil, X, Calendar, TrendingDown, TrendingUp } from 'lucide-react';
 import FitButton from '../components/FitButton';
+import BannerBackup from '../components/BannerBackup';
 
 export default function Inicio() {
   const { refreshKey, triggerRefresh, periodo } = useApp();
@@ -209,6 +210,7 @@ export default function Inicio() {
       const [y, m] = mov.fecha.split('-').map(Number);
       await reevaluarPresupuestoUSD(mov.categoriaId, m, y);
     }
+    await registrarCambio();
     triggerRefresh();
   }
 
@@ -221,6 +223,8 @@ export default function Inicio() {
   return (
     <div className="page">
       <Header title="MoneyManager" />
+
+      <BannerBackup />
 
       <div className="btn-row">
         <FitButton className="btn-main rojo" onClick={() => setModal({ tipo: 'gasto' })}>Nuevo Gasto</FitButton>

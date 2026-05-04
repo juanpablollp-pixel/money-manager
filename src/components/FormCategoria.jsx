@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { db } from '../db/database';
+import { db, registrarCambio } from '../db/database';
 
 export default function FormCategoria({ initial = null, onSave, onClose }) {
   const [nombre, setNombre] = useState(initial?.nombre || '');
@@ -9,6 +9,7 @@ export default function FormCategoria({ initial = null, onSave, onClose }) {
     if (!nombre) return;
     if (initial?.id) await db.categorias.update(initial.id, { nombre, tipo });
     else await db.categorias.add({ nombre, tipo });
+    await registrarCambio();
     onSave?.(); onClose?.();
   }
 

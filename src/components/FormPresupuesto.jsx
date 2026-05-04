@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../db/database';
+import { db, registrarCambio } from '../db/database';
 import { useApp } from '../context/AppContext';
 
 export default function FormPresupuesto({ initial = null, onSave, onClose }) {
@@ -27,6 +27,7 @@ export default function FormPresupuesto({ initial = null, onSave, onClose }) {
     } else {
       await db.presupuestos.add({ ...data, mes: periodo.mes, anio: periodo.anio });
     }
+    await registrarCambio();
     onSave?.(); onClose?.();
   }
 

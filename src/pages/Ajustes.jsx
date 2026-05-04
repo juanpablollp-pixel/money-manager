@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste, setAjuste } from '../db/database';
+import { db, getAjuste, setAjuste, marcarBackupHecho } from '../db/database';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
+import { exportarBackup } from '../utils/backup';
 import { Upload, Download, RefreshCw } from 'lucide-react';
 
 export default function Ajustes() {
   const { triggerRefresh } = useApp();
   const [carteras, setCarteras] = useState([]);
   const [loadingDolar, setLoadingDolar] = useState(false);
+  const [ultimoBackup, setUltimoBackup] = useState(null);
   const [vals, setVals] = useState({
     dolarMep: '',
     periodoDefault: 'mensual',
@@ -18,15 +20,17 @@ export default function Ajustes() {
 
   useEffect(() => {
     async function load() {
-      const [carts, dolar, periodo, cuenta, dia, sep] = await Promise.all([
+      const [carts, dolar, periodo, cuenta, dia, sep, ub] = await Promise.all([
         db.carteras.toArray(),
         getAjuste('dolarMep'),
         getAjuste('periodoDefault'),
         getAjuste('cuentaDefault'),
         getAjuste('primerDiaSemana'),
         getAjuste('separadorDecimal'),
+        getAjuste('ultimoBackup'),
       ]);
       setCarteras(carts);
+      setUltimoBackup(ub || null);
       setVals({
         dolarMep: dolar || '',
         periodoDefault: periodo || 'mensual',
@@ -59,20 +63,9 @@ export default function Ajustes() {
   }
 
   async function exportData() {
-    const [movs, carts, press, cats, trans, facts, ajus] = await Promise.all([
-      db.movimientos.toArray(),
-      db.carteras.toArray(),
-      db.presupuestos.toArray(),
-      db.categorias.toArray(),
-      db.transferencias.toArray(),
-      db.facturacion.toArray(),
-      db.ajustes.toArray(),
-    ]);
-    const data = JSON.stringify({ movimientos: movs, carteras: carts, presupuestos: press, categorias: cats, transferencias: trans, facturacion: facts, ajustes: ajus }, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = `moneymanager-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
-    URL.revokeObjectURL(url);
+    await exportarBackup();
+    setUltimoBackup(await getAjuste('ultimoBackup'));
+    triggerRefresh();
   }
 
   async function importData(e) {
@@ -118,6 +111,9 @@ export default function Ajustes() {
           else await db.ajustes.add({ clave: a.clave, valor: a.valor });
         }
       }
+      // Tras restaurar, no hay cambios sin guardar.
+      await marcarBackupHecho();
+      setUltimoBackup(await getAjuste('ultimoBackup'));
       triggerRefresh();
       alert('Backup restaurado correctamente.');
     } catch { alert('Archivo inválido.'); }
@@ -130,6 +126,11 @@ export default function Ajustes() {
       {/* Backup */}
       <div className="ajuste-card" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
         <span className="ajuste-label">Backup de Datos</span>
+        <span style={{ fontSize: '0.75rem', color: 'var(--slate-500)' }}>
+          {ultimoBackup
+            ? `Último backup: ${new Date(ultimoBackup).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}`
+            : 'Nunca hiciste backup'}
+        </span>
         <div style={{ display: 'flex', gap: 8, width: '100%' }}>
           <button
             className="btn-icon"

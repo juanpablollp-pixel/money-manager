@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste } from '../db/database';
+import { db, getAjuste, registrarCambio } from '../db/database';
 
 export default function FormFacturacion({ initial = null, onSave, onClose }) {
   const now = new Date();
@@ -26,6 +26,7 @@ export default function FormFacturacion({ initial = null, onSave, onClose }) {
     }
     if (initial?.id) await db.facturacion.update(initial.id, data);
     else await db.facturacion.add(data);
+    await registrarCambio();
     onSave?.();
     onClose?.();
   }

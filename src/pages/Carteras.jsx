@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { db, getAjuste } from '../db/database';
+import { db, getAjuste, registrarCambio } from '../db/database';
 import { formatPesos, nombreMes } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
@@ -43,6 +43,7 @@ export default function Carteras() {
 
   async function toggleBalance(c) {
     await db.carteras.update(c.id, { enBalance: !c.enBalance });
+    await registrarCambio();
     triggerRefresh();
   }
   async function eliminar(id) {
@@ -66,6 +67,7 @@ export default function Carteras() {
       await db.transferencias.bulkDelete(trans.map(t => t.id));
     }
     await db.carteras.delete(id);
+    await registrarCambio();
     triggerRefresh();
   }
   async function eliminarTransferencia(id) {
@@ -88,6 +90,7 @@ export default function Carteras() {
       await db.carteras.where('id').equals(transf.cuentaOrigen).modify(c => { c.importe += impOrigen; });
       await db.carteras.where('id').equals(transf.cuentaDestino).modify(c => { c.importe -= impDestino; });
     }
+    await registrarCambio();
     triggerRefresh();
   }
 

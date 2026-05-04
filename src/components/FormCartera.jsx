@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../db/database';
+import { db, registrarCambio } from '../db/database';
 
 export default function FormCartera({ initial = null, onSave, onClose }) {
   const [nombre, setNombre] = useState(initial?.nombre || '');
@@ -31,6 +31,7 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
     const data = { nombre, moneda, importe: parseFloat(String(importe).replace(',', '.')) || 0, enBalance, tipo, tipoCuenta };
     if (initial?.id) await db.carteras.update(initial.id, data);
     else await db.carteras.add(data);
+    await registrarCambio();
     onSave?.(); onClose?.();
   }
 

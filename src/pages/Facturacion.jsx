@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste } from '../db/database';
+import { db, getAjuste, registrarCambio } from '../db/database';
 import { formatPesos, nombreMes } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import PeriodSelector from '../components/PeriodSelector';
@@ -33,6 +33,7 @@ export default function Facturacion() {
   async function eliminar(id) {
     if (!confirm('¿Eliminar registro de facturación?')) return;
     await db.facturacion.delete(id);
+    await registrarCambio();
     triggerRefresh();
   }
 

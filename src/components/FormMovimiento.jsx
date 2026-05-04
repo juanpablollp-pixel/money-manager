@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste, reevaluarPresupuestoUSD } from '../db/database';
+import { db, getAjuste, reevaluarPresupuestoUSD, registrarCambio } from '../db/database';
 import { hoy } from '../utils/format';
 
 export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave, onClose }) {
@@ -103,6 +103,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
       }
     }
 
+    await registrarCambio();
     onSave?.();
     onClose?.();
   }

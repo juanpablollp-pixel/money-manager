@@ -85,6 +85,58 @@ export async function setAjuste(clave, valor) {
   else await db.ajustes.add({ clave, valor });
 }
 
+// Suma 1 al contador de cambios desde el último backup. Se llama tras cada
+// operación que modifica datos (movimientos, presupuestos, transferencias,
+// carteras, categorías, facturación). Cambios en `ajustes` no cuentan.
+export async function registrarCambio() {
+  const actual = parseInt(await getAjuste('cambiosDesdeBackup'), 10) || 0;
+  await setAjuste('cambiosDesdeBackup', String(actual + 1));
+}
+
+// Marca el momento del backup: resetea contador, guarda timestamp y limpia snooze.
+export async function marcarBackupHecho() {
+  await setAjuste('cambiosDesdeBackup', '0');
+  await setAjuste('ultimoBackup', new Date().toISOString());
+  await setAjuste('snoozeBackupHasta', '');
+}
+
+// Decide si el banner debe mostrarse.
+// Retorna { mostrar, cambios, diasSinBackup, ultimoBackup }
+export async function estadoBackup() {
+  const cambios = parseInt(await getAjuste('cambiosDesdeBackup'), 10) || 0;
+  const ultimoIso = await getAjuste('ultimoBackup');
+  const snoozeIso = await getAjuste('snoozeBackupHasta');
+
+  const ahora = Date.now();
+  const ultimo = ultimoIso ? new Date(ultimoIso).getTime() : null;
+  const diasSinBackup = ultimo ? Math.floor((ahora - ultimo) / 86400000) : null;
+
+  // Snooze activo
+  if (snoozeIso) {
+    const hasta = new Date(snoozeIso).getTime();
+    if (ahora < hasta) {
+      return { mostrar: false, cambios, diasSinBackup, ultimoBackup: ultimoIso };
+    }
+  }
+
+  const superaCambios = cambios >= 5;
+  const superaDias = diasSinBackup !== null && diasSinBackup >= 3;
+  // Si nunca hizo backup y ya hay cambios, también avisar.
+  const nuncaConCambios = ultimo === null && cambios > 0;
+
+  return {
+    mostrar: superaCambios || superaDias || nuncaConCambios,
+    cambios,
+    diasSinBackup,
+    ultimoBackup: ultimoIso,
+  };
+}
+
+export async function snoozeBackup24h() {
+  const hasta = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+  await setAjuste('snoozeBackupHasta', hasta);
+}
+
 // Re-evalúa el dolarUsado de un presupuesto USD del período (mes/año/categoría):
 // - Si aún hay gastos USD asociados, mantiene el dolarUsado existente.
 // - Si no quedan gastos USD asociados Y el período sigue vigente, descongela (dolarUsado = null).

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../db/database';
+import { db, registrarCambio } from '../db/database';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
@@ -17,6 +17,7 @@ export default function Categorias() {
   async function eliminar(id) {
     if (!confirm('¿Eliminar?')) return;
     await db.categorias.delete(id);
+    await registrarCambio();
     triggerRefresh();
   }
 
