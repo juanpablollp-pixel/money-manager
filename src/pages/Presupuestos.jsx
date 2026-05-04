@@ -17,6 +17,7 @@ export default function Presupuestos() {
   const [dolarMep, setDolarMep] = useState(1000);
   const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
+  const [mesAnteriorVacio, setMesAnteriorVacio] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -32,6 +33,9 @@ export default function Presupuestos() {
       setMovimientos(movs.filter(m => m.tipo === 'gasto' && esMismoPeriodo(m.fecha, periodo.mes, periodo.anio)));
       setDolarMep(parseFloat(dolar) || 1000);
       setSeparador(sep || 'coma');
+      let mAnt = periodo.mes - 1, aAnt = periodo.anio;
+      if (mAnt === 0) { mAnt = 12; aAnt -= 1; }
+      setMesAnteriorVacio(!press.some(p => p.mes === mAnt && p.anio === aAnt));
     }
     load();
   }, [refreshKey, periodo]);
@@ -56,6 +60,23 @@ export default function Presupuestos() {
       ...rest,
       mes: periodo.mes,
       anio: periodo.anio,
+    })));
+    triggerRefresh();
+  }
+
+  async function copiarAlMesAnterior() {
+    if (presupuestos.length === 0) {
+      alert('No hay presupuestos en este período para copiar.');
+      return;
+    }
+    let mesAnt = periodo.mes - 1;
+    let anioAnt = periodo.anio;
+    if (mesAnt === 0) { mesAnt = 12; anioAnt -= 1; }
+    if (!confirm(`Copiar ${presupuestos.length} presupuesto(s) al mes anterior?`)) return;
+    await db.presupuestos.bulkAdd(presupuestos.map(({ id, ...rest }) => ({
+      ...rest,
+      mes: mesAnt,
+      anio: anioAnt,
     })));
     triggerRefresh();
   }
@@ -97,6 +118,12 @@ export default function Presupuestos() {
       {presupuestos.length === 0 && (
         <FitButton className="btn-main gris-claro full" onClick={copiarMesAnterior}>
           Copiar presupuestos del mes anterior
+        </FitButton>
+      )}
+
+      {presupuestos.length > 0 && mesAnteriorVacio && (
+        <FitButton className="btn-main gris-claro full" onClick={copiarAlMesAnterior}>
+          Copiar presupuestos al mes anterior
         </FitButton>
       )}
 
