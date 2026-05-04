@@ -53,6 +53,16 @@ db.version(5).stores({
   });
 });
 
+db.version(6).stores({
+  transferencias: '++id, cuentaOrigen, cuentaDestino, importe, moneda, fecha, comentarios, dolarUsado',
+}).upgrade(async tx => {
+  const ajuste = await tx.table('ajustes').where('clave').equals('dolarMep').first();
+  const dolarActual = parseFloat(ajuste?.valor) || 1000;
+  await tx.table('transferencias').toCollection().modify(t => {
+    if (t.moneda === 'Dólares' && t.dolarUsado == null) t.dolarUsado = dolarActual;
+  });
+});
+
 // Seed ajustes por defecto
 db.on('populate', async () => {
   await db.ajustes.bulkAdd([
@@ -73,4 +83,75 @@ export async function setAjuste(clave, valor) {
   const existing = await db.ajustes.where('clave').equals(clave).first();
   if (existing) await db.ajustes.update(existing.id, { valor });
   else await db.ajustes.add({ clave, valor });
+}
+
+// Re-evalúa el dolarUsado de un presupuesto USD del período (mes/año/categoría):
+// - Si aún hay gastos USD asociados, mantiene el dolarUsado existente.
+// - Si no quedan gastos USD asociados Y el período sigue vigente, descongela (dolarUsado = null).
+// - Si el período ya pasó, lo deja como esté.
+export async function reevaluarPresupuestoUSD(categoriaId, mes, anio) {
+  if (categoriaId == null || !mes || !anio) return;
+  const presup = await db.presupuestos
+    .where({ categoriaId: Number(categoriaId), mes: Number(mes), anio: Number(anio) })
+    .filter(p => p.moneda === 'Dólares')
+    .first();
+  if (!presup) return;
+
+  const now = new Date();
+  const mesHoy = now.getMonth() + 1;
+  const anioHoy = now.getFullYear();
+  const periodoVigenteOFuturo = anio > anioHoy || (anio === anioHoy && mes >= mesHoy);
+  if (!periodoVigenteOFuturo) return;
+
+  const prefijo = `${anio}-${String(mes).padStart(2, '0')}`;
+  const tieneGastos = await db.movimientos
+    .filter(m =>
+      m.tipo === 'gasto' &&
+      m.moneda === 'Dólares' &&
+      m.categoriaId === Number(categoriaId) &&
+      typeof m.fecha === 'string' &&
+      m.fecha.startsWith(prefijo)
+    )
+    .count();
+
+  if (tieneGastos === 0 && presup.dolarUsado != null) {
+    // Dexie no permite borrar campos con update; reescribimos sin el campo.
+    const { dolarUsado: _omit, id, ...rest } = presup;
+    await db.presupuestos.delete(id);
+    await db.presupuestos.add({ ...rest, id });
+  }
+}
+
+// Congela la cotización de los presupuestos USD cuyo período ya pasó y que aún no tenían dolarUsado.
+// Para cada uno, intenta usar el dólar congelado de algún gasto del mismo mes/categoría;
+// si no hay gastos asociados, usa la cotización actual.
+export async function congelarPresupuestosVencidos() {
+  const now = new Date();
+  const mesHoy = now.getMonth() + 1;
+  const anioHoy = now.getFullYear();
+  const dolarActual = parseFloat(await getAjuste('dolarMep')) || 1000;
+
+  const pendientes = await db.presupuestos
+    .filter(p => p.moneda === 'Dólares' && p.dolarUsado == null)
+    .toArray();
+  if (pendientes.length === 0) return;
+
+  const vencidos = pendientes.filter(p => p.anio < anioHoy || (p.anio === anioHoy && p.mes < mesHoy));
+  if (vencidos.length === 0) return;
+
+  const movs = await db.movimientos.toArray();
+  for (const p of vencidos) {
+    const mes = String(p.mes).padStart(2, '0');
+    const prefijo = `${p.anio}-${mes}`;
+    const gastoConTasa = movs.find(m =>
+      m.tipo === 'gasto' &&
+      m.categoriaId === p.categoriaId &&
+      m.moneda === 'Dólares' &&
+      m.dolarUsado != null &&
+      typeof m.fecha === 'string' &&
+      m.fecha.startsWith(prefijo)
+    );
+    const tasa = gastoConTasa?.dolarUsado ?? dolarActual;
+    await db.presupuestos.update(p.id, { dolarUsado: tasa });
+  }
 }

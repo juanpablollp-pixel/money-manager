@@ -59,15 +59,16 @@ export default function Ajustes() {
   }
 
   async function exportData() {
-    const [movs, carts, press, cats, trans, facts] = await Promise.all([
+    const [movs, carts, press, cats, trans, facts, ajus] = await Promise.all([
       db.movimientos.toArray(),
       db.carteras.toArray(),
       db.presupuestos.toArray(),
       db.categorias.toArray(),
       db.transferencias.toArray(),
       db.facturacion.toArray(),
+      db.ajustes.toArray(),
     ]);
-    const data = JSON.stringify({ movimientos: movs, carteras: carts, presupuestos: press, categorias: cats, transferencias: trans, facturacion: facts }, null, 2);
+    const data = JSON.stringify({ movimientos: movs, carteras: carts, presupuestos: press, categorias: cats, transferencias: trans, facturacion: facts, ajustes: ajus }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href = url; a.download = `moneymanager-backup-${new Date().toISOString().split('T')[0]}.json`; a.click();
@@ -108,6 +109,15 @@ export default function Ajustes() {
       if (data.categorias?.length) await db.categorias.bulkAdd(data.categorias);
       if (data.transferencias?.length) await db.transferencias.bulkAdd(data.transferencias);
       if (data.facturacion?.length) await db.facturacion.bulkAdd(data.facturacion);
+      if (data.ajustes?.length) {
+        // Mergear: actualizar valores existentes por clave; agregar los nuevos.
+        for (const a of data.ajustes) {
+          if (!a?.clave) continue;
+          const existing = await db.ajustes.where('clave').equals(a.clave).first();
+          if (existing) await db.ajustes.update(existing.id, { valor: a.valor });
+          else await db.ajustes.add({ clave: a.clave, valor: a.valor });
+        }
+      }
       triggerRefresh();
       alert('Backup restaurado correctamente.');
     } catch { alert('Archivo inválido.'); }

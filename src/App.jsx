@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
+import { congelarPresupuestosVencidos } from './db/database';
 import MenuOverlay from './components/MenuOverlay';
 import Inicio from './pages/Inicio';
 import Carteras from './pages/Carteras';
@@ -10,6 +12,10 @@ import Ajustes from './pages/Ajustes';
 import './index.css';
 
 export default function App() {
+  useEffect(() => {
+    congelarPresupuestosVencidos();
+  }, []);
+
   return (
     <HashRouter>
       <AppProvider>

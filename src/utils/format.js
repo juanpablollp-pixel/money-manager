@@ -38,3 +38,29 @@ export const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','
 export function nombreMes(mes) {
   return MESES[mes - 1];
 }
+
+// Tasa de dólar representativa del período. Para evitar que los balances de
+// períodos cerrados fluctúen al cambiar el dólar de Ajustes, usamos el último
+// dolarUsado conocido con fecha ≤ fechaFin (entre movimientos y transferencias).
+// Si no hay ninguno, devuelve dolarFallback (típicamente el dólar actual).
+export function tasaDelPeriodo(movimientos, transferencias, fechaFin, dolarFallback) {
+  let mejor = null;
+  let mejorFecha = '';
+  for (const m of movimientos) {
+    if (m.moneda !== 'Dólares' || m.dolarUsado == null) continue;
+    if (!m.fecha || m.fecha > fechaFin) continue;
+    if (m.fecha > mejorFecha) {
+      mejor = m.dolarUsado;
+      mejorFecha = m.fecha;
+    }
+  }
+  for (const t of transferencias) {
+    if (t.moneda !== 'Dólares' || t.dolarUsado == null) continue;
+    if (!t.fecha || t.fecha > fechaFin) continue;
+    if (t.fecha > mejorFecha) {
+      mejor = t.dolarUsado;
+      mejorFecha = t.fecha;
+    }
+  }
+  return mejor ?? dolarFallback;
+}

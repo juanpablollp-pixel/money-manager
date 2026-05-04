@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste } from '../db/database';
-import { formatPesos, formatFecha, esMismoPeriodo } from '../utils/format';
+import { db, getAjuste, reevaluarPresupuestoUSD } from '../db/database';
+import { formatPesos, formatFecha, esMismoPeriodo, tasaDelPeriodo } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import PeriodSelector from '../components/PeriodSelector';
 import Header from '../components/Header';
@@ -109,21 +109,26 @@ export default function Inicio() {
     }
     for (const t of transferencias) {
       if (t.fecha <= finPeriodo) continue;
+      const tasaT = t.dolarUsado ?? dolarMep;
       if (t.cuentaOrigen === cartera.id) {
-        saldo += toNativaCartera(t.importe, t.moneda, cartera, dolarMep);
+        saldo += toNativaCartera(t.importe, t.moneda, cartera, tasaT);
       }
       if (t.cuentaDestino === cartera.id) {
-        saldo -= toNativaCartera(t.importe, t.moneda, cartera, dolarMep);
+        saldo -= toNativaCartera(t.importe, t.moneda, cartera, tasaT);
       }
     }
     return saldo;
   }
 
+  // Tasa representativa del período: usa el último dolarUsado ≤ finPeriodo,
+  // así un período cerrado no fluctúa al cambiar el dólar en Ajustes.
+  const tasaPeriodo = tasaDelPeriodo(movimientos, transferencias, finPeriodo, dolarMep);
+
   const balanceCuenta = carteras
     .filter(c => c.enBalance)
     .reduce((acc, c) => {
       const saldoNat = saldoCarteraAlPeriodo(c);
-      return acc + (c.moneda === 'Dólares' ? saldoNat * dolarMep : saldoNat);
+      return acc + (c.moneda === 'Dólares' ? saldoNat * tasaPeriodo : saldoNat);
     }, 0);
 
   // Por categoría: contar hasta el límite del presupuesto (el exceso no reduce la obligación restante)
@@ -143,6 +148,18 @@ export default function Inicio() {
 
   // Solo display — no afecta ningún cálculo del sistema
   const pendienteUSD = presupuestoTotalUSD - gastadoUSD;
+  // Para mostrar el equivalente en ARS, usamos la tasa congelada de cada presupuesto USD;
+  // si no está congelada (período vigente sin gastos), usa la tasa actual.
+  const pendienteUSDenARS = presupuestosPeriodo
+    .filter(p => p.moneda === 'Dólares')
+    .reduce((acc, p) => {
+      const gastadoEnP = movsMes
+        .filter(m => m.tipo === 'gasto' && m.moneda === 'Dólares' && m.categoriaId === p.categoriaId)
+        .reduce((s, m) => s + m.importe, 0);
+      const restanteUSD = p.importe - gastadoEnP;
+      const tasa = p.dolarUsado ?? dolarMep;
+      return acc + restanteUSD * tasa;
+    }, 0);
 
   const totalDejarEnCuenta = presupuestoTotalPesos - gastadoEnPresupuestados;
   const totalDespuesGastos = balanceCuenta - totalDejarEnCuenta;
@@ -151,7 +168,7 @@ export default function Inicio() {
     .filter(c => c.tipo === 'ahorros')
     .reduce((acc, c) => {
       const saldoNat = saldoCarteraAlPeriodo(c);
-      return acc + (c.moneda === 'Dólares' ? saldoNat * dolarMep : saldoNat);
+      return acc + (c.moneda === 'Dólares' ? saldoNat * tasaPeriodo : saldoNat);
     }, 0);
 
   const movsFiltrados = (() => {
@@ -187,6 +204,11 @@ export default function Inicio() {
       const delta = mov.tipo === 'ingreso' ? -importeNativo : importeNativo;
       await db.carteras.where('id').equals(mov.carteraId).modify(c => { c.importe += delta; });
     }
+    // Si era un gasto USD, re-evaluar si el presupuesto del período debe descongelarse.
+    if (mov?.tipo === 'gasto' && mov?.moneda === 'Dólares' && mov?.fecha) {
+      const [y, m] = mov.fecha.split('-').map(Number);
+      await reevaluarPresupuestoUSD(mov.categoriaId, m, y);
+    }
     triggerRefresh();
   }
 
@@ -220,7 +242,7 @@ export default function Inicio() {
           <div className="resumen-row">
             <span className="resumen-label" style={{ color: 'var(--gris-oscuro)' }}>Pendiente en USD</span>
             <span className="resumen-valor" style={{ color: 'var(--gris-oscuro)', fontSize: '0.88rem' }}>
-              ${pendienteUSD.toFixed(2)} → {fmt(pendienteUSD * dolarMep)}
+              ${pendienteUSD.toFixed(2)} → {fmt(pendienteUSDenARS)}
             </span>
           </div>
         )}

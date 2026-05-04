@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { db } from '../db/database';
 
 export default function FormCartera({ initial = null, onSave, onClose }) {
@@ -8,9 +8,26 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
   const [enBalance, setEnBalance] = useState(initial?.enBalance ?? true);
   const [tipo, setTipo] = useState(initial?.tipo || 'gastos');
   const [tipoCuenta, setTipoCuenta] = useState(initial?.tipoCuenta || 'Caja de Ahorros');
+  const [tieneHistorial, setTieneHistorial] = useState(false);
+
+  useEffect(() => {
+    if (!initial?.id) { setTieneHistorial(false); return; }
+    async function check() {
+      const movs = await db.movimientos.where('carteraId').equals(initial.id).count();
+      const trans = await db.transferencias
+        .filter(t => t.cuentaOrigen === initial.id || t.cuentaDestino === initial.id)
+        .count();
+      setTieneHistorial(movs > 0 || trans > 0);
+    }
+    check();
+  }, [initial?.id]);
 
   async function handleSave() {
     if (!nombre) return;
+    if (initial?.id && tieneHistorial && moneda !== initial.moneda) {
+      alert('No podés cambiar la moneda de una cartera con movimientos o transferencias asociadas. Primero eliminá esos registros o creá una cartera nueva.');
+      return;
+    }
     const data = { nombre, moneda, importe: parseFloat(String(importe).replace(',', '.')) || 0, enBalance, tipo, tipoCuenta };
     if (initial?.id) await db.carteras.update(initial.id, data);
     else await db.carteras.add(data);
@@ -30,7 +47,13 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
         </div>
         <div className="form-group">
           <label className="form-label">Moneda / Divisa</label>
-          <select className="form-select" value={moneda} onChange={e => setMoneda(e.target.value)}>
+          <select
+            className="form-select"
+            value={moneda}
+            onChange={e => setMoneda(e.target.value)}
+            disabled={tieneHistorial}
+            title={tieneHistorial ? 'No se puede cambiar la moneda de una cartera con historial' : undefined}
+          >
             <option value="Pesos">Pesos</option>
             <option value="Dólares">Dólares</option>
           </select>

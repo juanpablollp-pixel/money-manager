@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste } from '../db/database';
+import { db, getAjuste, reevaluarPresupuestoUSD } from '../db/database';
 import { hoy } from '../utils/format';
 
 export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave, onClose }) {
@@ -74,6 +74,32 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         const importeNativo = toCarteraNativa(nuevoImporte, moneda, carteraDestino, tasa);
         const delta = tipo === 'ingreso' ? importeNativo : -importeNativo;
         await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += delta; });
+      }
+    }
+
+    // Si es un gasto en USD, congelar el dolarUsado del presupuesto USD del mismo mes/categoría
+    // (sólo si todavía no estaba congelado). Esto fija la cotización del presupuesto al primer gasto.
+    if (tipo === 'gasto' && moneda === 'Dólares' && categoriaId && dolarUsadoNuevo != null) {
+      const [y, m] = fecha.split('-').map(Number);
+      const presup = await db.presupuestos
+        .where({ categoriaId: Number(categoriaId), mes: m, anio: y })
+        .filter(p => p.moneda === 'Dólares' && p.dolarUsado == null)
+        .first();
+      if (presup) {
+        await db.presupuestos.update(presup.id, { dolarUsado: dolarUsadoNuevo });
+      }
+    }
+
+    // Si al editar cambió fecha/categoría/moneda y el original era un gasto USD,
+    // descongelar el presupuesto del contexto original si quedó sin gastos.
+    if (initial?.id && initial.tipo === 'gasto' && initial.moneda === 'Dólares' && initial.fecha) {
+      const [yOld, mOld] = initial.fecha.split('-').map(Number);
+      const cambioContexto =
+        moneda !== 'Dólares' ||
+        Number(categoriaId) !== initial.categoriaId ||
+        fecha !== initial.fecha;
+      if (cambioContexto) {
+        await reevaluarPresupuestoUSD(initial.categoriaId, mOld, yOld);
       }
     }
 
