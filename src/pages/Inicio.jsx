@@ -140,15 +140,16 @@ export default function Inicio() {
       return acc + (esDolar(c.moneda) ? saldoNat * tasaPeriodo : saldoNat);
     }, 0);
 
-  // Por categoría: contar hasta el límite del presupuesto (el exceso no reduce la obligación restante)
-  const gastadoEnPresupuestados = presupuestosPeriodo
-    .filter(p => esPeso(p.moneda))
-    .reduce((acc, p) => {
-      const gastadoEnCategoria = movsMes
-        .filter(m => m.tipo === 'gasto' && m.categoriaId === p.categoriaId)
-        .reduce((sum, m) => sum + (esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
-      return acc + Math.min(gastadoEnCategoria, p.importe);
-    }, 0);
+  // Por categoría: contar hasta el límite del presupuesto (el exceso no reduce la obligación restante).
+  // Convierte ambos lados a ARS para presupuestos USD; así la línea "Total a Dejar en Cuenta"
+  // refleja la reserva total (pesos + dólares pendientes) en una sola unidad.
+  const gastadoEnPresupuestados = presupuestosPeriodo.reduce((acc, p) => {
+    const presupARS = esDolar(p.moneda) ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe;
+    const gastadoEnCategoriaARS = movsMes
+      .filter(m => m.tipo === 'gasto' && m.categoriaId === p.categoriaId)
+      .reduce((sum, m) => sum + (esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
+    return acc + Math.min(gastadoEnCategoriaARS, presupARS);
+  }, 0);
 
   const gastadoUSD = movsMes
     .filter(m => m.tipo === 'gasto' && esDolar(m.moneda))
@@ -170,7 +171,10 @@ export default function Inicio() {
       return acc + restanteUSD * tasa;
     }, 0);
 
-  const totalDejarEnCuenta = presupuestoTotalPesos - gastadoEnPresupuestados;
+  // Total a Dejar en Cuenta: presupuesto mensual completo (pesos + USD en ARS) menos
+  // lo que ya se gastó capado por presupuesto. Coincide con el "Presupuesto Mensual"
+  // mostrado arriba, así que la resta tiene sentido visual.
+  const totalDejarEnCuenta = (presupuestoTotalPesos + presupuestoTotalUSDenARS) - gastadoEnPresupuestados;
 
   const excesoDesglose = calcularExcesoDesglose({
     presupuestosPeriodo, movsMes, categorias, dolarFallback: dolarMep,

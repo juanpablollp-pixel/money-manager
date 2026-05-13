@@ -205,6 +205,20 @@ db.version(11).stores({
   snapshots: '++id, &[carteraId+mes+anio], carteraId, mes, anio, saldoNativo, fecha',
 });
 
+// Congelar dolarUsado en todos los presupuestos USD existentes sin tasa fija.
+// A partir de esta versión, los presupuestos USD siempre quedan congelados al
+// momento de cargarlos (ver FormPresupuesto). Esta migración hace lo mismo para
+// los que quedaron sueltos antes del cambio.
+db.version(12).stores({}).upgrade(async tx => {
+  const ajuste = await tx.table('ajustes').where('clave').equals('dolarMep').first();
+  const dolarActual = parseFloat(ajuste?.valor) || 1000;
+  await tx.table('presupuestos').toCollection().modify(p => {
+    const m = String(p.moneda || '').toLowerCase();
+    const esDol = m.startsWith('d') || m === 'usd';
+    if (esDol && p.dolarUsado == null) p.dolarUsado = dolarActual;
+  });
+});
+
 // Seed ajustes por defecto
 db.on('populate', async () => {
   await db.ajustes.bulkAdd([

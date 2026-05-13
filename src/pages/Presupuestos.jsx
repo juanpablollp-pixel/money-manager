@@ -47,6 +47,13 @@ export default function Presupuestos() {
     triggerRefresh();
   }
 
+  // Al copiar presupuestos USD, congelar dolarUsado con la cotización actual del destino
+  // (no la del mes origen). Así cada mes tiene su propia cotización fija.
+  function normalizarUSD(presup, dolarActual) {
+    if (esDolar(presup.moneda)) return { ...presup, dolarUsado: dolarActual };
+    return presup;
+  }
+
   async function copiarMesAnterior() {
     let mesAnt = periodo.mes - 1;
     let anioAnt = periodo.anio;
@@ -57,11 +64,11 @@ export default function Presupuestos() {
       return;
     }
     if (!confirm(`Copiar ${previos.length} presupuesto(s) del mes anterior?`)) return;
-    await db.presupuestos.bulkAdd(previos.map(({ id: _id, ...rest }) => ({
+    await db.presupuestos.bulkAdd(previos.map(({ id: _id, ...rest }) => normalizarUSD({
       ...rest,
       mes: periodo.mes,
       anio: periodo.anio,
-    })));
+    }, dolarMep)));
     await registrarCambio();
     triggerRefresh();
   }
@@ -75,11 +82,11 @@ export default function Presupuestos() {
     let anioAnt = periodo.anio;
     if (mesAnt === 0) { mesAnt = 12; anioAnt -= 1; }
     if (!confirm(`Copiar ${presupuestos.length} presupuesto(s) al mes anterior?`)) return;
-    await db.presupuestos.bulkAdd(presupuestos.map(({ id: _id, ...rest }) => ({
+    await db.presupuestos.bulkAdd(presupuestos.map(({ id: _id, ...rest }) => normalizarUSD({
       ...rest,
       mes: mesAnt,
       anio: anioAnt,
-    })));
+    }, dolarMep)));
     await registrarCambio();
     triggerRefresh();
   }

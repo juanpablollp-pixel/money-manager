@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { esDolar } from '../utils/format';
-import { db, registrarCambio } from '../db/database';
+import { db, getAjuste, registrarCambio } from '../db/database';
 import { useApp } from '../context/AppContext';
 
 export default function FormPresupuesto({ initial = null, onSave, onClose }) {
@@ -10,18 +10,20 @@ export default function FormPresupuesto({ initial = null, onSave, onClose }) {
   const [importe, setImporte] = useState(initial?.importe || '');
   const [moneda, setMoneda] = useState(initial?.moneda || 'Pesos');
   const [categorias, setCategorias] = useState([]);
+  const [dolarMep, setDolarMep] = useState(1000);
 
   useEffect(() => {
     db.categorias.toArray().then(setCategorias);
+    getAjuste('dolarMep').then(v => setDolarMep(parseFloat(v) || 1000));
   }, []);
 
   async function handleSave() {
     if (!empresa || !importe) return;
     const data = { empresa, categoriaId: Number(categoriaId), importe: parseFloat(String(importe).replace(',', '.')), moneda };
-    // Preservar el dolarUsado existente si ya estaba congelado (gasto previo o período cerrado).
-    // Si el presupuesto en USD aún no tiene gastos y el período sigue vigente, dolarUsado queda undefined → fluctúa.
-    if (esDolar(moneda) && initial?.dolarUsado != null) {
-      data.dolarUsado = initial.dolarUsado;
+    // Para presupuestos en USD, congelar dolarUsado al momento de cargar.
+    // Si ya tenía uno (por gasto previo o edición), preservarlo para no romper el histórico.
+    if (esDolar(moneda)) {
+      data.dolarUsado = initial?.dolarUsado ?? dolarMep;
     }
     if (initial?.id) {
       await db.presupuestos.update(initial.id, data);
