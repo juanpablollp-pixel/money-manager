@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { db, getAjuste, registrarCambio } from '../db/database';
 import { formatPesos, esDolar, esPeso } from '../utils/format';
 import Modal from './Modal';
-import { RefreshCw, Wrench, ChevronDown } from 'lucide-react';
+import { RefreshCw, Wrench, ChevronDown, FilePlus } from 'lucide-react';
 
 // Recalcula el saldo "esperado" de cada cartera a partir de sus movimientos
 // y transferencias, asumiendo saldo inicial 0. La diferencia con el saldo
@@ -63,12 +63,72 @@ export default function ModalReconciliacion({ onClose }) {
     setCargando(false);
   }
 
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { recalcular(); }, []);
 
   async function corregir(carteraId, nuevoSaldo) {
-    if (!confirm(`¿Ajustar el saldo guardado a ${formatPesos(nuevoSaldo, separador)}?`)) return;
+    if (!confirm(
+      `Vas a AJUSTAR el saldo guardado a ${formatPesos(nuevoSaldo, separador)}.\n\n` +
+      `Esto borra el "saldo inicial implícito" sin crear ningún movimiento. Útil sólo si la diferencia es un drift o ruido (centavitos por redondeo), NO si es plata real con la que arrancaste.\n\n` +
+      `¿Continuar?`
+    )) return;
     await db.carteras.update(carteraId, { importe: nuevoSaldo });
+    await registrarCambio();
+    await recalcular();
+  }
+
+  // Convierte la diferencia en un movimiento "Saldo inicial" del día anterior al
+  // primer movimiento de la cartera. NO toca el saldo guardado: el ingreso/gasto
+  // se inserta directamente con db.movimientos.add (sin pasar por el form que
+  // actualizaría cartera.importe). Como ambos lados de la balanza suben en la
+  // misma cantidad, la diferencia queda en 0 sin modificar el saldo actual.
+  async function convertirEnMovimiento(cartera, diferencia) {
+    const tipoMov = diferencia > 0 ? 'ingreso' : 'gasto';
+    const monto = Math.abs(diferencia);
+    if (!confirm(
+      `Vas a CREAR un movimiento "${tipoMov}" llamado "Saldo inicial" por ${formatPesos(monto, separador)} en ${cartera.nombre}.\n\n` +
+      `El saldo guardado NO se modifica. Esto convierte la diferencia "implícita" en un movimiento trazable con fecha previa al primer movimiento de la cartera.\n\n` +
+      `¿Continuar?`
+    )) return;
+    // Buscar/crear la categoría "Saldo inicial" del tipo correcto.
+    const tipoCat = tipoMov === 'ingreso' ? 'ingresos' : 'gastos';
+    let cat = await db.categorias.filter(c => c.nombre === 'Saldo inicial' && c.tipo === tipoCat).first();
+    if (!cat) {
+      const newId = await db.categorias.add({ nombre: 'Saldo inicial', tipo: tipoCat });
+      cat = { id: newId, nombre: 'Saldo inicial', tipo: tipoCat };
+    }
+    // Fecha: un día antes del primer movimiento/transferencia de la cartera, o hoy si no hay.
+    const [movs, trans] = await Promise.all([
+      db.movimientos.where('carteraId').equals(cartera.id).toArray(),
+      db.transferencias.filter(t => t.cuentaOrigen === cartera.id || t.cuentaDestino === cartera.id).toArray(),
+    ]);
+    let primera = null;
+    for (const m of movs) if (m.fecha && (!primera || m.fecha < primera)) primera = m.fecha;
+    for (const t of trans) if (t.fecha && (!primera || t.fecha < primera)) primera = t.fecha;
+    let fechaInicial;
+    if (primera) {
+      const d = new Date(primera + 'T00:00:00');
+      d.setDate(d.getDate() - 1);
+      fechaInicial = d.toISOString().split('T')[0];
+    } else {
+      fechaInicial = new Date().toISOString().split('T')[0];
+    }
+    // Insertar sin tocar el saldo guardado de la cartera.
+    const data = {
+      tipo: tipoMov,
+      fecha: fechaInicial,
+      empresa: 'Saldo inicial',
+      categoriaId: cat.id,
+      carteraId: cartera.id,
+      importe: monto,
+      moneda: cartera.moneda,
+      // eslint-disable-next-line react-hooks/purity
+      createdAt: Date.now(),
+    };
+    if (esDolar(cartera.moneda)) {
+      const dolarActual = parseFloat(await getAjuste('dolarMep')) || 1000;
+      data.dolarUsado = dolarActual;
+    }
+    await db.movimientos.add(data);
     await registrarCambio();
     await recalcular();
   }
@@ -83,8 +143,16 @@ export default function ModalReconciliacion({ onClose }) {
           <RefreshCw size={14} style={{ animation: cargando ? 'spin 1s linear infinite' : 'none' }} />
         </button>
       </div>
-      <div style={{ fontSize: '0.72rem', color: 'var(--gris-oscuro)', lineHeight: 1.35, marginBottom: 6 }}>
-        Saldo guardado vs recalculado desde 0. La diferencia es tu saldo inicial al crear la cartera (o drift por ediciones).
+      <div style={{ fontSize: '0.72rem', color: 'var(--gris-oscuro)', lineHeight: 1.4, marginBottom: 6 }}>
+        Saldo guardado vs recalculado desde 0. La diferencia puede ser tu saldo inicial real (plata con la que arrancaste) o un drift por redondeos. Expandí una cartera para verlo en detalle.
+      </div>
+      <div style={{ display: 'flex', gap: 10, fontSize: '0.68rem', color: 'var(--gris-oscuro)', marginBottom: 8, lineHeight: 1.3 }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <FilePlus size={11} /> Crear movimiento "Saldo inicial"
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <Wrench size={11} /> Ajustar saldo (sólo para drifts)
+        </span>
       </div>
       <div className="cards-list modal-scroll-list" style={{ gap: 4 }}>
         {filas.length === 0 && !cargando && <div className="empty">Sin carteras</div>}
@@ -153,14 +221,24 @@ export default function ModalReconciliacion({ onClose }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontWeight: 600, color: ok ? 'var(--verde)' : 'var(--negro)' }}>{fmt(f.diferencia)}</span>
                       {!ok && (
-                        <button
-                          className="btn-icon"
-                          title="Ajustar saldo guardado al recalculado"
-                          style={{ width: 22, height: 22 }}
-                          onClick={(e) => { e.stopPropagation(); corregir(f.cartera.id, f.recalc); }}
-                        >
-                          <Wrench size={11} />
-                        </button>
+                        <>
+                          <button
+                            className="btn-icon"
+                            title="Crear movimiento &quot;Saldo inicial&quot; (no modifica el saldo guardado)"
+                            style={{ width: 22, height: 22 }}
+                            onClick={(e) => { e.stopPropagation(); convertirEnMovimiento(f.cartera, f.diferencia); }}
+                          >
+                            <FilePlus size={11} />
+                          </button>
+                          <button
+                            className="btn-icon"
+                            title="Ajustar saldo guardado al recalculado (sólo para drifts)"
+                            style={{ width: 22, height: 22 }}
+                            onClick={(e) => { e.stopPropagation(); corregir(f.cartera.id, f.recalc); }}
+                          >
+                            <Wrench size={11} />
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
