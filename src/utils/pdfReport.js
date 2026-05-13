@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { db, getAjuste } from '../db/database';
-import { nombreMes, tasaDelPeriodo } from './format';
+import { nombreMes, esDolar, esPeso } from './format';
 
 function inicioPeriodo({ mes, anio }) {
   return `${anio}-${String(mes).padStart(2, '0')}-01`;
@@ -55,7 +55,6 @@ export async function exportarReportePDF(rango) {
   ]);
 
   const dolarMep = parseFloat(dolar) || 1000;
-  const tasaPeriodo = tasaDelPeriodo(movs, trans, fechaFin, dolarMep);
 
   const movsRango = movs
     .filter(m => m.fecha >= fechaIni && m.fecha <= fechaFin)
@@ -78,16 +77,16 @@ export async function exportarReportePDF(rango) {
 
   const totalIngresado = movsRango
     .filter(m => m.tipo === 'ingreso')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
+    .reduce((acc, m) => acc + (esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
   const totalGastado = movsRango
     .filter(m => m.tipo === 'gasto')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
+    .reduce((acc, m) => acc + (esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
 
   // Reconstruir saldo nativo de cada cartera al final del rango
   function toNativaCartera(imp, monedaMov, cartera, tasa) {
     if (!cartera || monedaMov === cartera.moneda) return imp;
-    if (monedaMov === 'Dólares' && cartera.moneda === 'Pesos') return imp * tasa;
-    if (monedaMov === 'Pesos' && cartera.moneda === 'Dólares') return imp / tasa;
+    if (esDolar(monedaMov) && esPeso(cartera.moneda)) return imp * tasa;
+    if (esPeso(monedaMov) && esDolar(cartera.moneda)) return imp / tasa;
     return imp;
   }
   function saldoCarteraAlFin(cartera) {
@@ -163,7 +162,7 @@ export async function exportarReportePDF(rango) {
     head: [['Cartera', 'Tipo', 'Moneda', 'Saldo']],
     body: carts.map(c => {
       const saldoNat = saldoCarteraAlFin(c);
-      const saldoFmt = c.moneda === 'Dólares' ? fmtUSD(saldoNat) : fmt(saldoNat);
+      const saldoFmt = esDolar(c.moneda) ? fmtUSD(saldoNat) : fmt(saldoNat);
       const nombre = c.enBalance ? c.nombre : `${c.nombre} *`;
       return [
         nombre,
@@ -205,7 +204,7 @@ export async function exportarReportePDF(rango) {
           m.empresa || '—',
           getCartera(m.carteraId),
           m.tipo === 'gasto' ? 'Gasto' : 'Ingreso',
-          (m.tipo === 'gasto' ? '-' : '+') + (m.moneda === 'Dólares' ? fmtUSD(m.importe) : fmt(m.importe)),
+          (m.tipo === 'gasto' ? '-' : '+') + (esDolar(m.moneda) ? fmtUSD(m.importe) : fmt(m.importe)),
         ])
       : [['Sin movimientos en este período', '', '', '', '', '']],
     styles: { fontSize: 9 },
@@ -227,7 +226,7 @@ export async function exportarReportePDF(rango) {
     const gastadoPorCat = movsRango
       .filter(m => m.tipo === 'gasto')
       .reduce((acc, m) => {
-        const ars = m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe;
+        const ars = esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe;
         acc[m.categoriaId] = (acc[m.categoriaId] || 0) + ars;
         return acc;
       }, {});
@@ -243,7 +242,7 @@ export async function exportarReportePDF(rango) {
         .slice()
         .sort((a, b) => ymCompare({ mes: a.mes, anio: a.anio }, { mes: b.mes, anio: b.anio }))
         .map(p => {
-          const esUSD = p.moneda === 'Dólares';
+          const esUSD = esDolar(p.moneda);
           const tasa = p.dolarUsado ?? dolarMep;
           const presupARS = esUSD ? p.importe * tasa : p.importe;
           const gastado = gastadoPorCat[p.categoriaId] || 0;
@@ -272,7 +271,7 @@ export async function exportarReportePDF(rango) {
     doc.setTextColor(30, 41, 59);
     doc.text('Facturación del Período', 14, y);
 
-    const totalFactARS = factsRango.reduce((acc, f) => acc + (f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe), 0);
+    const totalFactARS = factsRango.reduce((acc, f) => acc + (esDolar(f.moneda) ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe), 0);
     const mostrarPeriodo = ymCompare(desde, hasta) !== 0;
 
     autoTable(doc, {
@@ -288,8 +287,8 @@ export async function exportarReportePDF(rango) {
             const fila = [
               f.empresa || '—',
               f.moneda,
-              f.moneda === 'Dólares' ? fmtUSD(f.importe) : fmt(f.importe),
-              fmt(f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe),
+              esDolar(f.moneda) ? fmtUSD(f.importe) : fmt(f.importe),
+              fmt(esDolar(f.moneda) ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe),
             ];
             return mostrarPeriodo ? [`${nombreMes(f.mes)} ${f.anio}`, ...fila] : fila;
           }),

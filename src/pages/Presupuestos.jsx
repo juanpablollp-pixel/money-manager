@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste, registrarCambio } from '../db/database';
-import { formatPesos, esMismoPeriodo } from '../utils/format';
+import { formatPesos, esMismoPeriodo, esDolar, esPeso } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import PeriodSelector from '../components/PeriodSelector';
 import Header from '../components/Header';
@@ -57,7 +57,7 @@ export default function Presupuestos() {
       return;
     }
     if (!confirm(`Copiar ${previos.length} presupuesto(s) del mes anterior?`)) return;
-    await db.presupuestos.bulkAdd(previos.map(({ id, ...rest }) => ({
+    await db.presupuestos.bulkAdd(previos.map(({ id: _id, ...rest }) => ({
       ...rest,
       mes: periodo.mes,
       anio: periodo.anio,
@@ -75,7 +75,7 @@ export default function Presupuestos() {
     let anioAnt = periodo.anio;
     if (mesAnt === 0) { mesAnt = 12; anioAnt -= 1; }
     if (!confirm(`Copiar ${presupuestos.length} presupuesto(s) al mes anterior?`)) return;
-    await db.presupuestos.bulkAdd(presupuestos.map(({ id, ...rest }) => ({
+    await db.presupuestos.bulkAdd(presupuestos.map(({ id: _id, ...rest }) => ({
       ...rest,
       mes: mesAnt,
       anio: anioAnt,
@@ -89,7 +89,7 @@ export default function Presupuestos() {
 
   // Gastos del mes agrupados por categoría (en ARS)
   const gastadoPorCategoria = movimientos.reduce((acc, m) => {
-    const enARS = m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe;
+    const enARS = esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe;
     acc[m.categoriaId] = (acc[m.categoriaId] || 0) + enARS;
     return acc;
   }, {});
@@ -103,11 +103,11 @@ export default function Presupuestos() {
   const gastosHuerfanos = Object.entries(gastadoPorCategoria)
     .filter(([catId]) => !presupuestos.some(p => p.categoriaId === Number(catId)));
 
-  const pesos = presupuestos.filter(p => p.moneda === 'Pesos');
-  const dolares = presupuestos.filter(p => p.moneda === 'Dólares');
+  const pesos = presupuestos.filter(p => esPeso(p.moneda));
+  const dolares = presupuestos.filter(p => esDolar(p.moneda));
 
   const totalPresupuesto = presupuestos.reduce((acc, p) => {
-    return acc + (p.moneda === 'Dólares' ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe);
+    return acc + (esDolar(p.moneda) ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe);
   }, 0);
 
   return (
@@ -141,13 +141,13 @@ export default function Presupuestos() {
           <>
             <div className="resumen-divider" />
             {[...presupuestos].sort((a, b) => {
-              const arsA = a.moneda === 'Dólares' ? a.importe * (a.dolarUsado ?? dolarMep) : a.importe;
-              const arsB = b.moneda === 'Dólares' ? b.importe * (b.dolarUsado ?? dolarMep) : b.importe;
+              const arsA = esDolar(a.moneda) ? a.importe * (a.dolarUsado ?? dolarMep) : a.importe;
+              const arsB = esDolar(b.moneda) ? b.importe * (b.dolarUsado ?? dolarMep) : b.importe;
               const pctA = arsA > 0 ? (gastadoPorCategoria[a.categoriaId] || 0) / arsA : 0;
               const pctB = arsB > 0 ? (gastadoPorCategoria[b.categoriaId] || 0) / arsB : 0;
               return pctA - pctB;
             }).map(p => {
-              const presupARS = p.moneda === 'Dólares' ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe;
+              const presupARS = esDolar(p.moneda) ? p.importe * (p.dolarUsado ?? dolarMep) : p.importe;
               const gastado = gastadoPorCategoria[p.categoriaId] || 0;
               const pct = presupARS > 0 ? Math.min(100, (gastado / presupARS) * 100) : 0;
               const color = barColor(pct);

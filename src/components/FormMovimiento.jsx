@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste, reevaluarPresupuestoUSD, registrarCambio } from '../db/database';
-import { hoy } from '../utils/format';
+import { hoy, esDolar, esPeso } from '../utils/format';
 
 export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave, onClose }) {
   const [fecha, setFecha] = useState(initial?.fecha || hoy());
@@ -22,18 +22,21 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         initial ? Promise.resolve(null) : getAjuste('cuentaDefault'),
       ]);
       setCategorias(cats);
-      setCarteras(carts);
+      // Excluir archivadas, salvo que el movimiento ya esté asociado a una.
+      const visibles = carts.filter(c => !c.archivada || c.id === initial?.carteraId);
+      setCarteras(visibles);
       setDolarMep(parseFloat(dolar) || 1000);
       if (!initial && defaultCuenta) setCarteraId(String(defaultCuenta));
     }
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function toCarteraNativa(importe, movMoneda, cartera, tasa) {
     if (!cartera) return importe;
     if (movMoneda === cartera.moneda) return importe;
-    if (movMoneda === 'Dólares' && cartera.moneda === 'Pesos') return importe * tasa;
-    if (movMoneda === 'Pesos' && cartera.moneda === 'Dólares') return importe / tasa;
+    if (esDolar(movMoneda) && esPeso(cartera.moneda)) return importe * tasa;
+    if (esPeso(movMoneda) && esDolar(cartera.moneda)) return importe / tasa;
     return importe;
   }
 
@@ -42,7 +45,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
     const nuevoImporte = parseFloat(String(importe).replace(',', '.'));
     const nuevaCarteraId = Number(carteraId);
     // Al editar mantenemos el dolarUsado original; al crear lo congelamos al actual.
-    const dolarUsadoNuevo = moneda === 'Dólares'
+    const dolarUsadoNuevo = esDolar(moneda)
       ? (initial?.dolarUsado ?? dolarMep)
       : undefined;
     const data = { tipo, fecha, empresa, categoriaId: categoriaId ? Number(categoriaId) : null, carteraId: nuevaCarteraId, importe: nuevoImporte, moneda, createdAt: Date.now() };
@@ -55,7 +58,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         const tasaOld = initial.dolarUsado ?? dolarMep;
         const importeNativoOld = toCarteraNativa(initial.importe, initial.moneda, carteraOrigen, tasaOld);
         const oldDelta = initial.tipo === 'ingreso' ? -importeNativoOld : importeNativoOld;
-        await db.carteras.where('id').equals(initial.carteraId).modify(c => { c.importe += oldDelta; });
+        await db.carteras.where('id').equals(initial.carteraId).modify(c => { c.importe = Math.round((c.importe + oldDelta) * 100) / 100; });
       }
       // Aplicar efecto del movimiento nuevo sobre su cartera
       if (nuevaCarteraId) {
@@ -63,7 +66,7 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         const tasaNew = dolarUsadoNuevo ?? dolarMep;
         const importeNativoNew = toCarteraNativa(nuevoImporte, moneda, carteraDestino, tasaNew);
         const newDelta = tipo === 'ingreso' ? importeNativoNew : -importeNativoNew;
-        await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += newDelta; });
+        await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe = Math.round((c.importe + newDelta) * 100) / 100; });
       }
       await db.movimientos.update(initial.id, data);
     } else {
@@ -73,17 +76,17 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
         const tasa = dolarUsadoNuevo ?? dolarMep;
         const importeNativo = toCarteraNativa(nuevoImporte, moneda, carteraDestino, tasa);
         const delta = tipo === 'ingreso' ? importeNativo : -importeNativo;
-        await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe += delta; });
+        await db.carteras.where('id').equals(nuevaCarteraId).modify(c => { c.importe = Math.round((c.importe + delta) * 100) / 100; });
       }
     }
 
     // Si es un gasto en USD, congelar el dolarUsado del presupuesto USD del mismo mes/categoría
     // (sólo si todavía no estaba congelado). Esto fija la cotización del presupuesto al primer gasto.
-    if (tipo === 'gasto' && moneda === 'Dólares' && categoriaId && dolarUsadoNuevo != null) {
+    if (tipo === 'gasto' && esDolar(moneda) && categoriaId && dolarUsadoNuevo != null) {
       const [y, m] = fecha.split('-').map(Number);
       const presup = await db.presupuestos
         .where({ categoriaId: Number(categoriaId), mes: m, anio: y })
-        .filter(p => p.moneda === 'Dólares' && p.dolarUsado == null)
+        .filter(p => esDolar(p.moneda) && p.dolarUsado == null)
         .first();
       if (presup) {
         await db.presupuestos.update(presup.id, { dolarUsado: dolarUsadoNuevo });
@@ -92,10 +95,10 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
 
     // Si al editar cambió fecha/categoría/moneda y el original era un gasto USD,
     // descongelar el presupuesto del contexto original si quedó sin gastos.
-    if (initial?.id && initial.tipo === 'gasto' && initial.moneda === 'Dólares' && initial.fecha) {
+    if (initial?.id && initial.tipo === 'gasto' && esDolar(initial.moneda) && initial.fecha) {
       const [yOld, mOld] = initial.fecha.split('-').map(Number);
       const cambioContexto =
-        moneda !== 'Dólares' ||
+        !esDolar(moneda) ||
         Number(categoriaId) !== initial.categoriaId ||
         fecha !== initial.fecha;
       if (cambioContexto) {
@@ -155,6 +158,26 @@ export default function FormMovimiento({ tipo = 'gasto', initial = null, onSave,
             <option value="Dólares">Dólares</option>
           </select>
         </div>
+        {(() => {
+          const carteraSel = carteras.find(c => c.id === Number(carteraId));
+          if (carteraSel && moneda && carteraSel.moneda !== moneda) {
+            return (
+              <div style={{
+                background: '#fff7ed',
+                border: '1px solid #fb923c',
+                color: '#9a3412',
+                borderRadius: 8,
+                padding: '8px 10px',
+                fontSize: '0.78rem',
+                lineHeight: 1.3,
+                marginTop: 4,
+              }}>
+                Atención: estás cargando un movimiento en <b>{moneda}</b> sobre una cartera en <b>{carteraSel.moneda}</b>. Se convertirá al tipo de cambio actual.
+              </div>
+            );
+          }
+          return null;
+        })()}
       </div>
       <div className="btn-row">
         <button className="btn-main gris-claro" onClick={onClose}>Cancelar</button>

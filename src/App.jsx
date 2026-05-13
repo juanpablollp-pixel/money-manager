@@ -8,6 +8,7 @@ import Carteras from './pages/Carteras';
 import Presupuestos from './pages/Presupuestos';
 import Facturacion from './pages/Facturacion';
 import Categorias from './pages/Categorias';
+import Reportes from './pages/Reportes';
 import Ajustes from './pages/Ajustes';
 import './index.css';
 
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="/presupuestos" element={<Presupuestos />} />
           <Route path="/facturacion" element={<Facturacion />} />
           <Route path="/categorias" element={<Categorias />} />
+          <Route path="/reportes" element={<Reportes />} />
           <Route path="/ajustes" element={<Ajustes />} />
         </Routes>
       </AppProvider>

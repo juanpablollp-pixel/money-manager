@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { esDolar } from '../utils/format';
 import { db, getAjuste, registrarCambio } from '../db/database';
 
 export default function FormFacturacion({ initial = null, onSave, onClose }) {
@@ -21,7 +22,7 @@ export default function FormFacturacion({ initial = null, onSave, onClose }) {
   async function handleSave() {
     if (!importe) return;
     const data = { empresa, importe: parseFloat(String(importe).replace(',', '.')) || 0, moneda, mes, anio };
-    if (moneda === 'Dólares') {
+    if (esDolar(moneda)) {
       data.dolarUsado = initial?.dolarUsado ?? dolarMep;
     }
     if (initial?.id) await db.facturacion.update(initial.id, data);

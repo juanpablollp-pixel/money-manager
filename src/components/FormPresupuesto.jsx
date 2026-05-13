@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { esDolar } from '../utils/format';
 import { db, registrarCambio } from '../db/database';
 import { useApp } from '../context/AppContext';
 
@@ -19,7 +20,7 @@ export default function FormPresupuesto({ initial = null, onSave, onClose }) {
     const data = { empresa, categoriaId: Number(categoriaId), importe: parseFloat(String(importe).replace(',', '.')), moneda };
     // Preservar el dolarUsado existente si ya estaba congelado (gasto previo o período cerrado).
     // Si el presupuesto en USD aún no tiene gastos y el período sigue vigente, dolarUsado queda undefined → fluctúa.
-    if (moneda === 'Dólares' && initial?.dolarUsado != null) {
+    if (esDolar(moneda) && initial?.dolarUsado != null) {
       data.dolarUsado = initial.dolarUsado;
     }
     if (initial?.id) {

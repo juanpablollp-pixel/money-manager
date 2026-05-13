@@ -1,3 +1,37 @@
+// Reparación de mojibake (UTF-8 leído como Latin-1).
+export function repararMojibake(s) {
+  if (typeof s !== 'string' || s.indexOf('Ã') === -1) return s;
+  try {
+    const bytes = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) {
+      const cp = s.charCodeAt(i);
+      if (cp > 0xFF) return s;
+      bytes[i] = cp;
+    }
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return s;
+  }
+}
+
+// Detección robusta de moneda. Tolera mojibake ("DÃ³lares"), mayúsculas/minúsculas,
+// espacios al final y variantes ("USD"). Evita que un encoding roto haga que la
+// app trate dólares como pesos en silencio.
+function _normMoneda(m) {
+  if (typeof m !== 'string') return '';
+  return m.trim().toLowerCase();
+}
+export function esDolar(m) {
+  const n = _normMoneda(m);
+  if (!n) return false;
+  return n === 'dólares' || n === 'dolares' || n === 'usd' || n.startsWith('d') && n.includes('lares');
+}
+export function esPeso(m) {
+  const n = _normMoneda(m);
+  if (!n) return false;
+  return n === 'pesos' || n === 'ars' || n.startsWith('peso');
+}
+
 export function formatPesos(valor, separador = 'coma') {
   const num = parseFloat(valor) || 0;
   if (separador === 'coma') {
@@ -47,7 +81,7 @@ export function tasaDelPeriodo(movimientos, transferencias, fechaFin, dolarFallb
   let mejor = null;
   let mejorFecha = '';
   for (const m of movimientos) {
-    if (m.moneda !== 'Dólares' || m.dolarUsado == null) continue;
+    if (!esDolar(m.moneda) || m.dolarUsado == null) continue;
     if (!m.fecha || m.fecha > fechaFin) continue;
     if (m.fecha > mejorFecha) {
       mejor = m.dolarUsado;
@@ -55,7 +89,7 @@ export function tasaDelPeriodo(movimientos, transferencias, fechaFin, dolarFallb
     }
   }
   for (const t of transferencias) {
-    if (t.moneda !== 'Dólares' || t.dolarUsado == null) continue;
+    if (!esDolar(t.moneda) || t.dolarUsado == null) continue;
     if (!t.fecha || t.fecha > fechaFin) continue;
     if (t.fecha > mejorFecha) {
       mejor = t.dolarUsado;

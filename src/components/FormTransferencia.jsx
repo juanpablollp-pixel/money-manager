@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste, registrarCambio } from '../db/database';
-import { hoy } from '../utils/format';
+import { hoy, esDolar, esPeso } from '../utils/format';
 
 export default function FormTransferencia({ initial = null, onSave, onClose }) {
   const [origen, setOrigen] = useState(initial?.cuentaOrigen || '');
@@ -14,15 +14,17 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
 
   useEffect(() => {
     Promise.all([db.carteras.toArray(), getAjuste('dolarMep')]).then(([carts, dolar]) => {
-      setCarteras(carts);
+      const visibles = carts.filter(c => !c.archivada || c.id === initial?.cuentaOrigen || c.id === initial?.cuentaDestino);
+      setCarteras(visibles);
       setDolarMep(parseFloat(dolar) || 1000);
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function toNativa(imp, transferMoneda, cartera, tasa) {
     if (!cartera || transferMoneda === cartera.moneda) return imp;
-    if (transferMoneda === 'Dólares' && cartera.moneda === 'Pesos') return imp * tasa;
-    if (transferMoneda === 'Pesos' && cartera.moneda === 'Dólares') return imp / tasa;
+    if (esDolar(transferMoneda) && esPeso(cartera.moneda)) return imp * tasa;
+    if (esPeso(transferMoneda) && esDolar(cartera.moneda)) return imp / tasa;
     return imp;
   }
 
@@ -32,7 +34,7 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
     const nuevoOrigen = Number(origen);
     const nuevoDestino = Number(destino);
     // Al editar mantenemos el dolarUsado original; al crear lo congelamos al actual.
-    const dolarUsadoNuevo = moneda === 'Dólares'
+    const dolarUsadoNuevo = esDolar(moneda)
       ? (initial?.dolarUsado ?? dolarMep)
       : undefined;
     const data = { cuentaOrigen: nuevoOrigen, cuentaDestino: nuevoDestino, importe: nuevoImporte, moneda, fecha, comentarios, createdAt: Date.now() };
@@ -51,16 +53,16 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
       const tasaOld = initial.dolarUsado ?? dolarMep;
       const importeOrigenOld = toNativa(initial.importe, initial.moneda, carteraOrigenOld, tasaOld);
       const importeDestinoOld = toNativa(initial.importe, initial.moneda, carteraDestinoOld, tasaOld);
-      await db.carteras.where('id').equals(initial.cuentaOrigen).modify(c => { c.importe += importeOrigenOld; });
-      await db.carteras.where('id').equals(initial.cuentaDestino).modify(c => { c.importe -= importeDestinoOld; });
+      await db.carteras.where('id').equals(initial.cuentaOrigen).modify(c => { c.importe = Math.round((c.importe + importeOrigenOld) * 100) / 100; });
+      await db.carteras.where('id').equals(initial.cuentaDestino).modify(c => { c.importe = Math.round((c.importe - importeDestinoOld) * 100) / 100; });
       // Aplicar efecto de la transferencia nueva
-      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= importeOrigen; });
-      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += importeDestino; });
+      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe = Math.round((c.importe - importeOrigen) * 100) / 100; });
+      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe = Math.round((c.importe + importeDestino) * 100) / 100; });
       await db.transferencias.update(initial.id, data);
     } else {
       await db.transferencias.add(data);
-      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe -= importeOrigen; });
-      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe += importeDestino; });
+      await db.carteras.where('id').equals(nuevoOrigen).modify(c => { c.importe = Math.round((c.importe - importeOrigen) * 100) / 100; });
+      await db.carteras.where('id').equals(nuevoDestino).modify(c => { c.importe = Math.round((c.importe + importeDestino) * 100) / 100; });
     }
 
     await registrarCambio();
@@ -97,6 +99,31 @@ export default function FormTransferencia({ initial = null, onSave, onClose }) {
             <option value="Dólares">Dólares</option>
           </select>
         </div>
+        {(() => {
+          const carteraOrigenSel = carteras.find(c => c.id === Number(origen));
+          const carteraDestinoSel = carteras.find(c => c.id === Number(destino));
+          const desajustes = [];
+          if (carteraOrigenSel && moneda && carteraOrigenSel.moneda !== moneda) {
+            desajustes.push(`origen (${carteraOrigenSel.moneda})`);
+          }
+          if (carteraDestinoSel && moneda && carteraDestinoSel.moneda !== moneda) {
+            desajustes.push(`destino (${carteraDestinoSel.moneda})`);
+          }
+          if (desajustes.length === 0) return null;
+          return (
+            <div style={{
+              background: '#fff7ed',
+              border: '1px solid #fb923c',
+              color: '#9a3412',
+              borderRadius: 8,
+              padding: '8px 10px',
+              fontSize: '0.78rem',
+              lineHeight: 1.3,
+            }}>
+              Atención: la transferencia está en <b>{moneda}</b> y no coincide con la cartera de {desajustes.join(' y ')}. Se convertirá al tipo de cambio actual.
+            </div>
+          );
+        })()}
         <div className="form-group">
           <label className="form-label">Fecha</label>
           <input type="date" className="form-input" value={fecha} onChange={e => setFecha(e.target.value)} />

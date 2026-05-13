@@ -1,4 +1,6 @@
 import Dexie from 'dexie';
+import { repararMojibake as _repararMojibake } from '../utils/format';
+export const repararMojibake = _repararMojibake;
 
 export const db = new Dexie('MoneyManager');
 
@@ -63,6 +65,146 @@ db.version(6).stores({
   });
 });
 
+// Redondeo defensivo a centavos: limpia residuos de aritmética flotante en saldos
+// de carteras (ej.: 9.09e-13 → 0). No altera saldos legítimos porque toda la app
+// trabaja a 2 decimales.
+db.version(7).stores({}).upgrade(async tx => {
+  await tx.table('carteras').toCollection().modify(c => {
+    if (typeof c.importe === 'number') {
+      c.importe = Math.round(c.importe * 100) / 100;
+    }
+  });
+});
+
+// Reparación de mojibake: la función está en utils/format.js (importada arriba)
+// y re-exportada para que Ajustes.jsx pueda seguir usando esta ruta.
+
+db.version(8).stores({}).upgrade(async tx => {
+  await tx.table('carteras').toCollection().modify(c => {
+    if (c.nombre) c.nombre = repararMojibake(c.nombre);
+    if (c.moneda) c.moneda = repararMojibake(c.moneda);
+    if (c.tipoCuenta) c.tipoCuenta = repararMojibake(c.tipoCuenta);
+  });
+  await tx.table('categorias').toCollection().modify(c => {
+    if (c.nombre) c.nombre = repararMojibake(c.nombre);
+  });
+  await tx.table('movimientos').toCollection().modify(m => {
+    if (m.empresa) m.empresa = repararMojibake(m.empresa);
+    if (m.moneda) m.moneda = repararMojibake(m.moneda);
+  });
+  await tx.table('presupuestos').toCollection().modify(p => {
+    if (p.empresa) p.empresa = repararMojibake(p.empresa);
+    if (p.moneda) p.moneda = repararMojibake(p.moneda);
+  });
+  await tx.table('transferencias').toCollection().modify(t => {
+    if (t.comentarios) t.comentarios = repararMojibake(t.comentarios);
+    if (t.moneda) t.moneda = repararMojibake(t.moneda);
+  });
+  await tx.table('facturacion').toCollection().modify(f => {
+    if (f.empresa) f.empresa = repararMojibake(f.empresa);
+    if (f.moneda) f.moneda = repararMojibake(f.moneda);
+  });
+});
+
+// Campo "archivada" en carteras: permite ocultarlas sin perder la historia
+// asociada. Se inicializa en false para todas las carteras existentes.
+db.version(9).stores({}).upgrade(async tx => {
+  await tx.table('carteras').toCollection().modify(c => {
+    if (c.archivada == null) c.archivada = false;
+  });
+});
+
+// Saldos iniciales explícitos: si una cartera tiene saldo distinto al recalculado
+// desde 0, crear un movimiento "Saldo inicial" que represente el monto con el que
+// fue creada. Así no hay magia en los saldos.
+db.version(10).stores({}).upgrade(async tx => {
+  const dolarRow = await tx.table('ajustes').where('clave').equals('dolarMep').first();
+  const dolarFallback = parseFloat(dolarRow?.valor) || 1000;
+
+  // Obtener/crear las categorías "Saldo inicial" (ingresos y gastos).
+  async function ensureCategoria(nombre, tipo) {
+    let cat = await tx.table('categorias').filter(c => c.nombre === nombre && c.tipo === tipo).first();
+    if (!cat) {
+      const newId = await tx.table('categorias').add({ nombre, tipo });
+      cat = { id: newId, nombre, tipo };
+    }
+    return cat;
+  }
+  const catSaldoIngreso = await ensureCategoria('Saldo inicial', 'ingresos');
+  const catSaldoGasto = await ensureCategoria('Saldo inicial', 'gastos');
+
+  const carteras = await tx.table('carteras').toArray();
+  const movs = await tx.table('movimientos').toArray();
+  const trans = await tx.table('transferencias').toArray();
+
+  function aNativa(imp, monedaOrigen, c, tasa) {
+    if (!c || monedaOrigen === c.moneda) return imp;
+    const md = String(monedaOrigen || '').toLowerCase();
+    const mc = String(c.moneda || '').toLowerCase();
+    const esDolMov = md.startsWith('d') || md === 'usd';
+    const esPesMov = md.startsWith('p') || md === 'ars';
+    const esDolCar = mc.startsWith('d') || mc === 'usd';
+    const esPesCar = mc.startsWith('p') || mc === 'ars';
+    if (esDolMov && esPesCar) return imp * tasa;
+    if (esPesMov && esDolCar) return imp / tasa;
+    return imp;
+  }
+
+  for (const c of carteras) {
+    let recalc = 0;
+    let primeraFecha = null;
+    for (const m of movs) {
+      if (m.carteraId !== c.id) continue;
+      const tasa = m.dolarUsado ?? dolarFallback;
+      const nat = aNativa(m.importe, m.moneda, c, tasa);
+      recalc += m.tipo === 'ingreso' ? nat : -nat;
+      if (m.fecha && (!primeraFecha || m.fecha < primeraFecha)) primeraFecha = m.fecha;
+    }
+    for (const t of trans) {
+      if (t.cuentaOrigen !== c.id && t.cuentaDestino !== c.id) continue;
+      const tasa = t.dolarUsado ?? dolarFallback;
+      const nat = aNativa(t.importe, t.moneda, c, tasa);
+      if (t.cuentaOrigen === c.id) recalc -= nat;
+      if (t.cuentaDestino === c.id) recalc += nat;
+      if (t.fecha && (!primeraFecha || t.fecha < primeraFecha)) primeraFecha = t.fecha;
+    }
+    recalc = Math.round(recalc * 100) / 100;
+    const guardado = Math.round((c.importe || 0) * 100) / 100;
+    const diferencia = Math.round((guardado - recalc) * 100) / 100;
+    if (diferencia === 0) continue;
+
+    // Fecha del saldo inicial: un día antes del primer movimiento, o hoy si no hay ninguno.
+    let fechaInicial;
+    if (primeraFecha) {
+      const d = new Date(primeraFecha + 'T00:00:00');
+      d.setDate(d.getDate() - 1);
+      fechaInicial = d.toISOString().split('T')[0];
+    } else {
+      fechaInicial = new Date().toISOString().split('T')[0];
+    }
+
+    const tipo = diferencia > 0 ? 'ingreso' : 'gasto';
+    const importe = Math.abs(diferencia);
+    const cat = tipo === 'ingreso' ? catSaldoIngreso : catSaldoGasto;
+    await tx.table('movimientos').add({
+      tipo,
+      fecha: fechaInicial,
+      empresa: 'Saldo inicial',
+      categoriaId: cat.id,
+      carteraId: c.id,
+      importe,
+      moneda: c.moneda,
+      createdAt: Date.now(),
+    });
+  }
+});
+
+// Tabla snapshots: saldo "congelado" de cada cartera al cierre de un período.
+// Permite calcular balances históricos sin depender del saldo actual.
+db.version(11).stores({
+  snapshots: '++id, &[carteraId+mes+anio], carteraId, mes, anio, saldoNativo, fecha',
+});
+
 // Seed ajustes por defecto
 db.on('populate', async () => {
   await db.ajustes.bulkAdd([
@@ -88,9 +230,12 @@ export async function setAjuste(clave, valor) {
 // Suma 1 al contador de cambios desde el último backup. Se llama tras cada
 // operación que modifica datos (movimientos, presupuestos, transferencias,
 // carteras, categorías, facturación). Cambios en `ajustes` no cuentan.
+// También invalida todos los snapshots de saldos (se regeneran on-demand).
 export async function registrarCambio() {
   const actual = parseInt(await getAjuste('cambiosDesdeBackup'), 10) || 0;
   await setAjuste('cambiosDesdeBackup', String(actual + 1));
+  // Snapshots: invalidar todos. Es barato (pocos registros) y garantiza correctness.
+  try { await db.snapshots.clear(); } catch { /* tabla puede no existir aún */ }
 }
 
 // Marca el momento del backup: resetea contador, guarda timestamp y limpia snooze.
@@ -135,6 +280,86 @@ export async function estadoBackup() {
 export async function snoozeBackup24h() {
   const hasta = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
   await setAjuste('snoozeBackupHasta', hasta);
+}
+
+// Obtiene los saldos nativos de cada cartera al fin de (mes, anio).
+// Si ya existe un snapshot para ese período (cartera-mes-anio), lo usa.
+// Si no, reconstruye desde el saldo actual restando movs/transferencias posteriores
+// y lo persiste para próximas consultas (sólo para períodos ya cerrados).
+export async function getSaldosPeriodo(mes, anio) {
+  const carts = await db.carteras.toArray();
+  const ultimoDia = new Date(anio, mes, 0).getDate();
+  const finPeriodo = `${anio}-${String(mes).padStart(2, '0')}-${String(ultimoDia).padStart(2, '0')}`;
+
+  const ahora = new Date();
+  const mesHoy = ahora.getMonth() + 1;
+  const anioHoy = ahora.getFullYear();
+  const periodoCerrado = anio < anioHoy || (anio === anioHoy && mes < mesHoy);
+
+  const result = new Map();
+  const aPersistir = [];
+
+  for (const c of carts) {
+    if (periodoCerrado) {
+      const snap = await db.snapshots
+        .where('[carteraId+mes+anio]').equals([c.id, mes, anio])
+        .first();
+      if (snap) { result.set(c.id, snap.saldoNativo); continue; }
+    }
+    // Reconstruir desde el saldo actual.
+    const dolarFallback = parseFloat(await getAjuste('dolarMep')) || 1000;
+    const movs = await db.movimientos.toArray();
+    const trans = await db.transferencias.toArray();
+    let saldo = c.importe;
+    function aNativa(imp, moneda, tasa) {
+      if (moneda === c.moneda) return imp;
+      const md = String(moneda || '').toLowerCase();
+      const mc = String(c.moneda || '').toLowerCase();
+      const esDolMov = md.startsWith('d') || md === 'usd';
+      const esPesMov = md.startsWith('p') || md === 'ars';
+      const esDolCar = mc.startsWith('d') || mc === 'usd';
+      const esPesCar = mc.startsWith('p') || mc === 'ars';
+      if (esDolMov && esPesCar) return imp * tasa;
+      if (esPesMov && esDolCar) return imp / tasa;
+      return imp;
+    }
+    for (const m of movs) {
+      if (m.fecha <= finPeriodo) continue;
+      if (m.carteraId !== c.id) continue;
+      const nat = aNativa(m.importe, m.moneda, m.dolarUsado ?? dolarFallback);
+      saldo += m.tipo === 'ingreso' ? -nat : nat;
+    }
+    for (const t of trans) {
+      if (t.fecha <= finPeriodo) continue;
+      const nat = aNativa(t.importe, t.moneda, t.dolarUsado ?? dolarFallback);
+      if (t.cuentaOrigen === c.id) saldo += nat;
+      if (t.cuentaDestino === c.id) saldo -= nat;
+    }
+    saldo = Math.round(saldo * 100) / 100;
+    result.set(c.id, saldo);
+    if (periodoCerrado) aPersistir.push({ carteraId: c.id, mes, anio, saldoNativo: saldo, fecha: finPeriodo });
+  }
+
+  // Persistir snapshots que faltaban (sólo períodos cerrados).
+  if (aPersistir.length > 0) {
+    try { await db.snapshots.bulkAdd(aPersistir); } catch { /* ya existían: ignorar */ }
+  }
+
+  return result;
+}
+
+// Invalida snapshots cuyas fechas estén por encima de la fecha de un movimiento
+// editado/eliminado. Llamar cuando se altera un movimiento o transferencia.
+export async function invalidarSnapshotsDesde(fechaStr) {
+  if (!fechaStr) return;
+  const [y, m] = fechaStr.split('-').map(Number);
+  if (!y || !m) return;
+  // Borrar todos los snapshots de períodos ≥ (y, m).
+  const todos = await db.snapshots.toArray();
+  const ids = todos
+    .filter(s => s.anio > y || (s.anio === y && s.mes >= m))
+    .map(s => s.id);
+  if (ids.length > 0) await db.snapshots.bulkDelete(ids);
 }
 
 // Re-evalúa el dolarUsado de un presupuesto USD del período (mes/año/categoría):

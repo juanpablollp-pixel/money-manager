@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db, getAjuste, registrarCambio } from '../db/database';
-import { formatPesos, nombreMes } from '../utils/format';
+import { formatPesos, nombreMes, esDolar, esPeso } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import FormCartera from '../components/FormCartera';
 import FormTransferencia from '../components/FormTransferencia';
-import { Pencil, X, Eye, EyeOff } from 'lucide-react';
+import { Pencil, X, Eye, EyeOff, Archive, ArchiveRestore } from 'lucide-react';
 import FitButton from '../components/FitButton';
 
 function ymToValue(mes, anio) {
@@ -26,6 +26,7 @@ export default function Carteras() {
   const [showHistorial, setShowHistorial] = useState(false);
   const [filtroDesde, setFiltroDesde] = useState('');
   const [filtroHasta, setFiltroHasta] = useState('');
+  const [mostrarArchivadas, setMostrarArchivadas] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -51,22 +52,27 @@ export default function Carteras() {
     const transfAsociadas = await db.transferencias
       .filter(t => t.cuentaOrigen === id || t.cuentaDestino === id)
       .count();
-    let mensaje = '¿Eliminar cartera?';
     if (movsAsociados > 0 || transfAsociadas > 0) {
-      mensaje = `Esta cartera tiene ${movsAsociados} movimiento(s) y ${transfAsociadas} transferencia(s) asociada(s). ` +
-        `Si la eliminás, también se borrarán esos registros. ¿Continuar?`;
+      // No permitir eliminar carteras con historial — sólo archivar.
+      const ok = confirm(
+        `Esta cartera tiene ${movsAsociados} movimiento(s) y ${transfAsociadas} transferencia(s) asociada(s).\n\n` +
+        `Para preservar la historia, no se puede eliminar. ¿Querés archivarla en su lugar?\n\n` +
+        `Las carteras archivadas se ocultan de los formularios y del balance, pero conservan todos sus registros.`
+      );
+      if (!ok) return;
+      await db.carteras.update(id, { archivada: true });
+      await registrarCambio();
+      triggerRefresh();
+      return;
     }
-    if (!confirm(mensaje)) return;
-    if (movsAsociados > 0) {
-      await db.movimientos.where('carteraId').equals(id).delete();
-    }
-    if (transfAsociadas > 0) {
-      const trans = await db.transferencias
-        .filter(t => t.cuentaOrigen === id || t.cuentaDestino === id)
-        .toArray();
-      await db.transferencias.bulkDelete(trans.map(t => t.id));
-    }
+    // Sin historial: eliminar directamente.
+    if (!confirm('¿Eliminar cartera?')) return;
     await db.carteras.delete(id);
+    await registrarCambio();
+    triggerRefresh();
+  }
+  async function desarchivar(id) {
+    await db.carteras.update(id, { archivada: false });
     await registrarCambio();
     triggerRefresh();
   }
@@ -81,14 +87,14 @@ export default function Carteras() {
       const carteraDestino = carteras.find(c => c.id === transf.cuentaDestino);
       function toNat(imp, monedaT, cartera) {
         if (!cartera || monedaT === cartera.moneda) return imp;
-        if (monedaT === 'Dólares' && cartera.moneda === 'Pesos') return imp * tasa;
-        if (monedaT === 'Pesos' && cartera.moneda === 'Dólares') return imp / tasa;
+        if (esDolar(monedaT) && esPeso(cartera.moneda)) return imp * tasa;
+        if (esPeso(monedaT) && esDolar(cartera.moneda)) return imp / tasa;
         return imp;
       }
       const impOrigen = toNat(transf.importe, transf.moneda, carteraOrigen);
       const impDestino = toNat(transf.importe, transf.moneda, carteraDestino);
-      await db.carteras.where('id').equals(transf.cuentaOrigen).modify(c => { c.importe += impOrigen; });
-      await db.carteras.where('id').equals(transf.cuentaDestino).modify(c => { c.importe -= impDestino; });
+      await db.carteras.where('id').equals(transf.cuentaOrigen).modify(c => { c.importe = Math.round((c.importe + impOrigen) * 100) / 100; });
+      await db.carteras.where('id').equals(transf.cuentaDestino).modify(c => { c.importe = Math.round((c.importe - impDestino) * 100) / 100; });
     }
     await registrarCambio();
     triggerRefresh();
@@ -96,8 +102,10 @@ export default function Carteras() {
 
   const fmt = v => formatPesos(v, separador);
 
-  const gastos = carteras.filter(c => c.tipo === 'gastos');
-  const ahorros = carteras.filter(c => c.tipo === 'ahorros');
+  const activas = carteras.filter(c => !c.archivada);
+  const archivadas = carteras.filter(c => c.archivada);
+  const gastos = activas.filter(c => c.tipo === 'gastos');
+  const ahorros = activas.filter(c => c.tipo === 'ahorros');
 
   function getNombreCartera(id) {
     return carteras.find(c => c.id === id)?.nombre || id;
@@ -167,8 +175,8 @@ export default function Carteras() {
               <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>
                 <Pencil size={15} />
               </button>
-              <button className="btn-icon rojo" onClick={() => eliminar(c.id)}>
-                <X size={15} />
+              <button className="btn-icon rojo" onClick={() => eliminar(c.id)} title="Archivar o eliminar">
+                <Archive size={15} />
               </button>
             </div>
             <span className="cartera-moneda">{c.moneda}</span>
@@ -186,15 +194,48 @@ export default function Carteras() {
               <button className="btn-icon" onClick={() => setModal({ tipo: 'cartera', item: c })}>
                 <Pencil size={15} />
               </button>
-              <button className="btn-icon rojo" onClick={() => eliminar(c.id)}>
-                <X size={15} />
+              <button className="btn-icon rojo" onClick={() => eliminar(c.id)} title="Archivar o eliminar">
+                <Archive size={15} />
               </button>
             </div>
             <span className="cartera-moneda">{c.moneda}</span>
           </div>
         ))}
-        {carteras.length === 0 && <div className="empty">Sin carteras</div>}
+        {activas.length === 0 && archivadas.length === 0 && <div className="empty">Sin carteras</div>}
       </div>
+
+      {archivadas.length > 0 && (
+        <>
+          <div className="section-header" style={{ marginTop: 16 }}>
+            <div
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
+              onClick={() => setMostrarArchivadas(v => !v)}
+            >
+              <div className="section-title" style={{ color: 'var(--gris-oscuro)' }}>
+                Carteras archivadas ({archivadas.length}) <span style={{ fontSize: '0.7rem' }}>{mostrarArchivadas ? '▾' : '▸'}</span>
+              </div>
+            </div>
+            <div className="section-line" />
+          </div>
+          {mostrarArchivadas && (
+            <div className="cards-list">
+              {archivadas.map(c => (
+                <div key={c.id} className="cartera-card" style={{ opacity: 0.6 }}>
+                  <span className="cartera-nombre">{c.nombre}</span>
+                  <span className="cartera-monto">{fmt(c.importe)}</span>
+                  <span className="cartera-tipo">{c.tipoCuenta}</span>
+                  <div className="cartera-actions" style={{ gridRow: 'span 2', alignSelf: 'start' }}>
+                    <button className="btn-icon" onClick={() => desarchivar(c.id)} title="Desarchivar">
+                      <ArchiveRestore size={15} />
+                    </button>
+                  </div>
+                  <span className="cartera-moneda">{c.moneda}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       {modal && !showHistorial && (
         <Modal onClose={() => setModal(null)}>

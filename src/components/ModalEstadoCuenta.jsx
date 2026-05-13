@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { db } from '../db/database';
 import Modal from './Modal';
 import { nombreMes } from '../utils/format';
-import { exportarReportePDF } from '../utils/pdfReport';
 
 function ymToValue({ mes, anio }) {
   return `${anio}-${String(mes).padStart(2, '0')}`;
@@ -66,6 +65,7 @@ export default function ModalEstadoCuenta({ onClose }) {
     if (!desde || !hasta) return;
     setExportando(true);
     try {
+      const { exportarReportePDF } = await import('../utils/pdfReport');
       await exportarReportePDF({ desde: valueToYm(desde), hasta: valueToYm(hasta) });
       onClose?.();
     } finally {

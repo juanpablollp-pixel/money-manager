@@ -11,15 +11,17 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
   const [tieneHistorial, setTieneHistorial] = useState(false);
 
   useEffect(() => {
-    if (!initial?.id) { setTieneHistorial(false); return; }
+    if (!initial?.id) return;
+    let cancelado = false;
     async function check() {
       const movs = await db.movimientos.where('carteraId').equals(initial.id).count();
       const trans = await db.transferencias
         .filter(t => t.cuentaOrigen === initial.id || t.cuentaDestino === initial.id)
         .count();
-      setTieneHistorial(movs > 0 || trans > 0);
+      if (!cancelado) setTieneHistorial(movs > 0 || trans > 0);
     }
     check();
+    return () => { cancelado = true; };
   }, [initial?.id]);
 
   async function handleSave() {
@@ -28,7 +30,9 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
       alert('No podés cambiar la moneda de una cartera con movimientos o transferencias asociadas. Primero eliminá esos registros o creá una cartera nueva.');
       return;
     }
-    const data = { nombre, moneda, importe: parseFloat(String(importe).replace(',', '.')) || 0, enBalance, tipo, tipoCuenta };
+    // Una cartera de ahorros nunca se incluye en el Balance de Cuenta del dashboard.
+    const enBalanceFinal = tipo === 'ahorros' ? false : enBalance;
+    const data = { nombre, moneda, importe: parseFloat(String(importe).replace(',', '.')) || 0, enBalance: enBalanceFinal, tipo, tipoCuenta };
     if (initial?.id) await db.carteras.update(initial.id, data);
     else await db.carteras.add(data);
     await registrarCambio();
@@ -73,17 +77,27 @@ export default function FormCartera({ initial = null, onSave, onClose }) {
           </select>
         </div>
         <div className="form-group">
-          <label className="form-label">Se Incluye en el Balance Total</label>
-          <select className="form-select" value={enBalance ? 'si' : 'no'} onChange={e => setEnBalance(e.target.value === 'si')}>
-            <option value="si">Sí</option>
-            <option value="no">No</option>
+          <label className="form-label">Tipo de Cartera</label>
+          <select className="form-select" value={tipo} onChange={e => {
+            const nuevo = e.target.value;
+            setTipo(nuevo);
+            if (nuevo === 'ahorros') setEnBalance(false);
+          }}>
+            <option value="gastos">Gastos</option>
+            <option value="ahorros">Ahorros</option>
           </select>
         </div>
         <div className="form-group">
-          <label className="form-label">Tipo de Cartera</label>
-          <select className="form-select" value={tipo} onChange={e => setTipo(e.target.value)}>
-            <option value="gastos">Gastos</option>
-            <option value="ahorros">Ahorros</option>
+          <label className="form-label">Se Incluye en el Balance Total</label>
+          <select
+            className="form-select"
+            value={tipo === 'ahorros' ? 'no' : (enBalance ? 'si' : 'no')}
+            onChange={e => setEnBalance(e.target.value === 'si')}
+            disabled={tipo === 'ahorros'}
+            title={tipo === 'ahorros' ? 'Las carteras de ahorros no se incluyen en el balance de cuenta' : undefined}
+          >
+            <option value="si">Sí</option>
+            <option value="no">No</option>
           </select>
         </div>
       </div>

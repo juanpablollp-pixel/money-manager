@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db, getAjuste, registrarCambio } from '../db/database';
-import { formatPesos, nombreMes } from '../utils/format';
+import { formatPesos, nombreMes, esDolar } from '../utils/format';
 import { useApp } from '../context/AppContext';
 import PeriodSelector from '../components/PeriodSelector';
 import Header from '../components/Header';
@@ -39,7 +39,7 @@ export default function Facturacion() {
 
   const fmt = v => formatPesos(v, separador);
   const total = facturacion.reduce(
-    (acc, f) => acc + (f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe),
+    (acc, f) => acc + (esDolar(f.moneda) ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe),
     0
   );
 
@@ -78,12 +78,12 @@ export default function Facturacion() {
             <div className="presupuesto-body">
               <span className="card-title">{f.empresa || '—'}</span>
               <span className="card-date">
-                {f.moneda === 'Dólares' ? `Dólares → ${fmt(f.importe * (f.dolarUsado ?? dolarMep))}` : 'Pesos'}
+                {esDolar(f.moneda) ? `Dólares → ${fmt(f.importe * (f.dolarUsado ?? dolarMep))}` : 'Pesos'}
               </span>
             </div>
             <div className="card-right">
               <span className="card-importe">
-                {f.moneda === 'Dólares' ? `$${f.importe}` : fmt(f.importe)}
+                {esDolar(f.moneda) ? `$${f.importe}` : fmt(f.importe)}
               </span>
               <div className="card-actions">
                 <button className="btn-icon" onClick={() => setModal({ item: f })}><Pencil size={15} /></button>

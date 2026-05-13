@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { X, LayoutDashboard, Wallet, PieChart, FileText, Tag, Settings, FileDown } from 'lucide-react';
+import { X, LayoutDashboard, Wallet, PieChart, FileText, Tag, Settings, FileDown, BarChart3 } from 'lucide-react';
 import ModalEstadoCuenta from './ModalEstadoCuenta';
 
 const items = [
@@ -10,6 +10,7 @@ const items = [
   { label: 'Presupuestos', to: '/presupuestos', icon: PieChart, iconBg: '#fff7ed', iconColor: '#f97316' },
   { label: 'Facturación', to: '/facturacion', icon: FileText, iconBg: '#f0fdf4', iconColor: '#22c55e' },
   { label: 'Categorías', to: '/categorias', icon: Tag, iconBg: '#fdf4ff', iconColor: '#a855f7' },
+  { label: 'Reportes', to: '/reportes', icon: BarChart3, iconBg: '#fef2f2', iconColor: '#ef4444' },
 ];
 
 export default function MenuOverlay() {
@@ -46,6 +47,7 @@ export default function MenuOverlay() {
             </div>
 
             <nav className="menu-nav">
+              {/* eslint-disable-next-line no-unused-vars */}
               {items.map(({ label, to, icon: Icon, iconBg, iconColor }) => (
                 <button key={to} className="menu-item" onClick={() => go(to)}>
                   <div className="menu-item-icon" style={{ background: iconBg, color: iconColor }}>

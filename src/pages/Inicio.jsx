@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { db, getAjuste, reevaluarPresupuestoUSD, registrarCambio } from '../db/database';
-import { formatPesos, formatFecha, esMismoPeriodo, tasaDelPeriodo } from '../utils/format';
+import { db, getAjuste, reevaluarPresupuestoUSD, registrarCambio, getSaldosPeriodo } from '../db/database';
+import { formatPesos, formatFecha, esMismoPeriodo, tasaDelPeriodo, esDolar, esPeso, nombreMes } from '../utils/format';
+import { calcularExcesoDesglose, sumarExceso } from '../utils/dashboard';
 import { useApp } from '../context/AppContext';
 import PeriodSelector from '../components/PeriodSelector';
 import Header from '../components/Header';
@@ -18,6 +19,7 @@ export default function Inicio() {
   const [categorias, setCategorias] = useState([]);
   const [facturacion, setFacturacion] = useState([]);
   const [transferencias, setTransferencias] = useState([]);
+  const [saldosPeriodo, setSaldosPeriodo] = useState(new Map());
   const [dolarMep, setDolarMep] = useState(1000);
   const [separador, setSeparador] = useState('coma');
   const [modal, setModal] = useState(null);
@@ -25,6 +27,7 @@ export default function Inicio() {
   const [mostrarFiltro, setMostrarFiltro] = useState(false);
   const [fechaDesde, setFechaDesde] = useState('');
   const [fechaHasta, setFechaHasta] = useState('');
+  const [excesoExpandido, setExcesoExpandido] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -50,40 +53,43 @@ export default function Inicio() {
       setTransferencias(trans);
       setSeparador(sep || 'coma');
       setDolarMep(parseFloat(dolar) || 1000);
+      // Cargar/generar snapshots para el período actual.
+      const saldos = await getSaldosPeriodo(periodo.mes, periodo.anio);
+      setSaldosPeriodo(saldos);
     }
     load();
-  }, [refreshKey]);
+  }, [refreshKey, periodo.mes, periodo.anio]);
 
   const fmt = v => formatPesos(v, separador);
 
   const presupuestosPeriodo = presupuestos.filter(p => p.mes === periodo.mes && p.anio === periodo.anio);
 
   const presupuestoTotalPesos = presupuestosPeriodo
-    .filter(p => p.moneda === 'Pesos')
+    .filter(p => esPeso(p.moneda))
     .reduce((acc, p) => acc + p.importe, 0);
 
   const presupuestoTotalUSD = presupuestosPeriodo
-    .filter(p => p.moneda === 'Dólares')
+    .filter(p => esDolar(p.moneda))
     .reduce((acc, p) => acc + p.importe, 0);
 
   const presupuestoTotalUSDenARS = presupuestosPeriodo
-    .filter(p => p.moneda === 'Dólares')
+    .filter(p => esDolar(p.moneda))
     .reduce((acc, p) => acc + p.importe * (p.dolarUsado ?? dolarMep), 0);
 
   const movsMes = movimientos.filter(m => esMismoPeriodo(m.fecha, periodo.mes, periodo.anio));
 
   const totalGastado = movsMes
     .filter(m => m.tipo === 'gasto')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
+    .reduce((acc, m) => acc + (esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
 
   const totalIngresado = movsMes
     .filter(m => m.tipo === 'ingreso')
-    .reduce((acc, m) => acc + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
+    .reduce((acc, m) => acc + (esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
 
   const facturacionPeriodo = facturacion.filter(f => f.mes === periodo.mes && f.anio === periodo.anio);
 
   const totalFacturado = facturacionPeriodo.reduce((acc, f) => {
-    return acc + (f.moneda === 'Dólares' ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe);
+    return acc + (esDolar(f.moneda) ? f.importe * (f.dolarUsado ?? dolarMep) : f.importe);
   }, 0);
 
   // Reconstruye el saldo nativo de cada cartera al final del período seleccionado.
@@ -95,12 +101,14 @@ export default function Inicio() {
 
   function toNativaCartera(imp, monedaMov, cartera, tasa) {
     if (!cartera || monedaMov === cartera.moneda) return imp;
-    if (monedaMov === 'Dólares' && cartera.moneda === 'Pesos') return imp * tasa;
-    if (monedaMov === 'Pesos' && cartera.moneda === 'Dólares') return imp / tasa;
+    if (esDolar(monedaMov) && esPeso(cartera.moneda)) return imp * tasa;
+    if (esPeso(monedaMov) && esDolar(cartera.moneda)) return imp / tasa;
     return imp;
   }
 
   function saldoCarteraAlPeriodo(cartera) {
+    // Si tenemos snapshot (period cerrado), úsalo. Si no, reconstruir on-the-fly.
+    if (saldosPeriodo.has(cartera.id)) return saldosPeriodo.get(cartera.id);
     let saldo = cartera.importe;
     for (const m of movimientos) {
       if (m.fecha <= finPeriodo) continue;
@@ -126,25 +134,25 @@ export default function Inicio() {
   const tasaPeriodo = tasaDelPeriodo(movimientos, transferencias, finPeriodo, dolarMep);
 
   const balanceCuenta = carteras
-    .filter(c => c.enBalance)
+    .filter(c => c.enBalance && !c.archivada)
     .reduce((acc, c) => {
       const saldoNat = saldoCarteraAlPeriodo(c);
-      return acc + (c.moneda === 'Dólares' ? saldoNat * tasaPeriodo : saldoNat);
+      return acc + (esDolar(c.moneda) ? saldoNat * tasaPeriodo : saldoNat);
     }, 0);
 
   // Por categoría: contar hasta el límite del presupuesto (el exceso no reduce la obligación restante)
   const gastadoEnPresupuestados = presupuestosPeriodo
-    .filter(p => p.moneda === 'Pesos')
+    .filter(p => esPeso(p.moneda))
     .reduce((acc, p) => {
       const gastadoEnCategoria = movsMes
         .filter(m => m.tipo === 'gasto' && m.categoriaId === p.categoriaId)
-        .reduce((sum, m) => sum + (m.moneda === 'Dólares' ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
+        .reduce((sum, m) => sum + (esDolar(m.moneda) ? m.importe * (m.dolarUsado ?? dolarMep) : m.importe), 0);
       return acc + Math.min(gastadoEnCategoria, p.importe);
     }, 0);
 
   const gastadoUSD = movsMes
-    .filter(m => m.tipo === 'gasto' && m.moneda === 'Dólares')
-    .filter(m => presupuestosPeriodo.some(p => p.categoriaId === m.categoriaId && p.moneda === 'Dólares'))
+    .filter(m => m.tipo === 'gasto' && esDolar(m.moneda))
+    .filter(m => presupuestosPeriodo.some(p => p.categoriaId === m.categoriaId && esDolar(p.moneda)))
     .reduce((acc, m) => acc + m.importe, 0);
 
   // Solo display — no afecta ningún cálculo del sistema
@@ -152,10 +160,10 @@ export default function Inicio() {
   // Para mostrar el equivalente en ARS, usamos la tasa congelada de cada presupuesto USD;
   // si no está congelada (período vigente sin gastos), usa la tasa actual.
   const pendienteUSDenARS = presupuestosPeriodo
-    .filter(p => p.moneda === 'Dólares')
+    .filter(p => esDolar(p.moneda))
     .reduce((acc, p) => {
       const gastadoEnP = movsMes
-        .filter(m => m.tipo === 'gasto' && m.moneda === 'Dólares' && m.categoriaId === p.categoriaId)
+        .filter(m => m.tipo === 'gasto' && esDolar(m.moneda) && m.categoriaId === p.categoriaId)
         .reduce((s, m) => s + m.importe, 0);
       const restanteUSD = p.importe - gastadoEnP;
       const tasa = p.dolarUsado ?? dolarMep;
@@ -163,13 +171,19 @@ export default function Inicio() {
     }, 0);
 
   const totalDejarEnCuenta = presupuestoTotalPesos - gastadoEnPresupuestados;
-  const totalDespuesGastos = balanceCuenta - totalDejarEnCuenta;
+
+  const excesoDesglose = calcularExcesoDesglose({
+    presupuestosPeriodo, movsMes, categorias, dolarFallback: dolarMep,
+  });
+  const excesoDeGasto = sumarExceso(excesoDesglose);
+
+  const totalDespuesGastos = balanceCuenta - totalDejarEnCuenta - excesoDeGasto;
 
   const ahorros = carteras
-    .filter(c => c.tipo === 'ahorros')
+    .filter(c => c.tipo === 'ahorros' && !c.archivada)
     .reduce((acc, c) => {
       const saldoNat = saldoCarteraAlPeriodo(c);
-      return acc + (c.moneda === 'Dólares' ? saldoNat * tasaPeriodo : saldoNat);
+      return acc + (esDolar(c.moneda) ? saldoNat * tasaPeriodo : saldoNat);
     }, 0);
 
   const movsFiltrados = (() => {
@@ -199,14 +213,14 @@ export default function Inicio() {
       let importeNativo = mov.importe;
       if (cartera && mov.moneda !== cartera.moneda) {
         const tasa = mov.dolarUsado ?? dolarMep;
-        if (mov.moneda === 'Dólares' && cartera.moneda === 'Pesos') importeNativo = mov.importe * tasa;
-        if (mov.moneda === 'Pesos' && cartera.moneda === 'Dólares') importeNativo = mov.importe / tasa;
+        if (esDolar(mov.moneda) && esPeso(cartera.moneda)) importeNativo = mov.importe * tasa;
+        if (esPeso(mov.moneda) && esDolar(cartera.moneda)) importeNativo = mov.importe / tasa;
       }
       const delta = mov.tipo === 'ingreso' ? -importeNativo : importeNativo;
-      await db.carteras.where('id').equals(mov.carteraId).modify(c => { c.importe += delta; });
+      await db.carteras.where('id').equals(mov.carteraId).modify(c => { c.importe = Math.round((c.importe + delta) * 100) / 100; });
     }
     // Si era un gasto USD, re-evaluar si el presupuesto del período debe descongelarse.
-    if (mov?.tipo === 'gasto' && mov?.moneda === 'Dólares' && mov?.fecha) {
+    if (mov?.tipo === 'gasto' && esDolar(mov?.moneda) && mov?.fecha) {
       const [y, m] = mov.fecha.split('-').map(Number);
       await reevaluarPresupuestoUSD(mov.categoriaId, m, y);
     }
@@ -236,7 +250,7 @@ export default function Inicio() {
       <div className="resumen">
         <div className="resumen-row">
           <span className="resumen-label">Facturación Mensual</span>
-          <span className="resumen-valor" style={{ color: 'var(--verde)' }}>{fmt(totalFacturado)}</span>
+          <span className="resumen-valor">{fmt(totalFacturado)}</span>
         </div>
         <div className="resumen-row">
           <span className="resumen-label">Presupuesto Mensual</span>
@@ -254,6 +268,36 @@ export default function Inicio() {
           <span className="resumen-label">Total a Dejar en Cuenta</span>
           <span className="resumen-valor">{fmt(totalDejarEnCuenta)}</span>
         </div>
+        {excesoDeGasto > 0 && (
+          <>
+            <div
+              className="resumen-row"
+              onClick={() => setExcesoExpandido(v => !v)}
+              style={{ cursor: 'pointer', userSelect: 'none' }}
+              title="Tocá para ver el detalle"
+            >
+              <span className="resumen-label">
+                Exceso de Gasto <span style={{ fontSize: '0.7rem', color: 'var(--gris-oscuro)' }}>{excesoExpandido ? '▾' : '▸'}</span>
+              </span>
+              <span className="resumen-valor" style={{ color: 'var(--rojo)' }}>{fmt(excesoDeGasto)}</span>
+            </div>
+            {excesoExpandido && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0 4px 12px' }}>
+                {excesoDesglose.map(it => (
+                  <div key={`${it.tipo}-${it.categoriaId}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.78rem' }}>
+                    <span style={{ color: 'var(--gris-oscuro)' }}>
+                      {it.nombre}
+                      <span style={{ marginLeft: 6, fontSize: '0.68rem', color: 'var(--gris-oscuro)', opacity: 0.7 }}>
+                        {it.tipo === 'excedente' ? 'excedido' : 'sin presupuesto'}
+                      </span>
+                    </span>
+                    <span style={{ color: 'var(--rojo)' }}>{fmt(it.monto)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
         <div className="resumen-row">
           <span className="resumen-label">Total Después de Gastos</span>
           <span className="resumen-valor" style={{ color: totalDespuesGastos < 0 ? 'var(--rojo)' : 'var(--negro)' }}>{fmt(totalDespuesGastos)}</span>
@@ -281,7 +325,14 @@ export default function Inicio() {
 
       <div className="section-header">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div className="section-title">Historial de Movimientos</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div className="section-title">Historial de Movimientos</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--gris-oscuro)' }}>
+              {(fechaDesde || fechaHasta)
+                ? `Mostrando ${fechaDesde || '…'} a ${fechaHasta || '…'}`
+                : `Mostrando ${nombreMes(periodo.mes)} ${periodo.anio}`}
+            </div>
+          </div>
           <button
             className="btn-icon"
             style={{ width: 32, height: 32 }}
